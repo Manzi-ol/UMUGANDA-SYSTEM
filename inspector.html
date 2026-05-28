@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d3b2a" />
+  <title>Inspector Dashboard | Umuganda</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <nav class="u-navbar">
+    <div class="u-container u-navbar-inner">
+      <a href="index.html" class="u-brand">
+        <span class="u-brand-mark"></span>
+        Umuganda<span class="u-brand-dot">.</span>rw
+      </a>
+      <div class="u-nav-actions">
+        <span class="u-nav-user">
+          <span class="u-avatar" id="navAvatar">IN</span>
+          <span id="userName">Inspector</span>
+        </span>
+        <button class="btn btn-ghost btn-sm btn-icon-mobile" onclick="logout()">
+          <i class="bi bi-box-arrow-right"></i> <span class="label">Logout</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <header class="u-dash-header">
+    <div class="u-container">
+      <span class="role-badge">Inspector</span>
+      <h1>System Reports, <span id="inspectorName">Inspector</span></h1>
+      <p class="subtitle">Overview of all Umuganda activities and attendance.</p>
+    </div>
+  </header>
+
+  <main class="u-main">
+    <div class="u-container">
+
+      <div class="u-stats-grid">
+        <div class="u-stat"><div class="value" id="statActivities">0</div><div class="label">Total Activities</div></div>
+        <div class="u-stat blue"><div class="value" id="statCompleted">0</div><div class="label">Completed</div></div>
+        <div class="u-stat gold"><div class="value" id="statAttRate">0%</div><div class="label">Avg Attendance</div></div>
+        <div class="u-stat danger"><div class="value" id="statCharges">0</div><div class="label">Total Charges</div></div>
+      </div>
+
+      <section class="u-panel">
+        <h3 class="u-panel-title">Activities report</h3>
+        <p class="u-panel-subtitle">Attendance breakdown for every activity.</p>
+        <div class="u-table-wrap">
+          <table class="u-table" id="activitiesReport">
+            <thead>
+              <tr>
+                <th>Activity</th><th>Date</th><th>Status</th>
+                <th>Present</th><th>Absent</th><th>Charges</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="u-panel">
+        <h3 class="u-panel-title">Villager performance</h3>
+        <p class="u-panel-subtitle">How each villager has performed across all activities.</p>
+        <div class="u-table-wrap">
+          <table class="u-table" id="villagersReport">
+            <thead>
+              <tr>
+                <th>Villager</th><th>Present</th><th>Absent</th>
+                <th>Rate</th><th>Charges</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="u-panel">
+        <h3 class="u-panel-title">Charges issued</h3>
+        <p class="u-panel-subtitle">All absence fines applied by the leader.</p>
+        <div class="u-table-wrap">
+          <table class="u-table" id="chargesReport">
+            <thead>
+              <tr><th>Villager</th><th>Activity</th><th>Date</th><th>Amount</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="u-footer">
+    <div class="u-container"><p>© 2026 Umuganda Management System</p></div>
+  </footer>
+
+  <script src="js/script.js"></script>
+  <script>
+    const user = requireRole("inspector");
+    if (user) {
+      document.getElementById("userName").textContent      = user.name;
+      document.getElementById("inspectorName").textContent = user.name.split(" ")[0];
+      document.getElementById("navAvatar").textContent     = getInitials(user.name);
+    }
+
+    function render() {
+      const activities = getActivities();
+      const attendance = getAttendance();
+
+      const completed    = activities.filter(a => a.status === "completed").length;
+      const presentCount = attendance.filter(a => a.status === "present").length;
+      const totalRecords = attendance.length;
+      const totalCharges = attendance.reduce((s, a) => s + (a.charge || 0), 0);
+      const attRate      = totalRecords ? Math.round(presentCount / totalRecords * 100) + "%" : "—";
+
+      document.getElementById("statActivities").textContent = activities.length;
+      document.getElementById("statCompleted") .textContent = completed;
+      document.getElementById("statAttRate")   .textContent = attRate;
+      document.getElementById("statCharges")   .textContent = totalCharges ? formatRWF(totalCharges) : "0";
+
+      // Activities report
+      const aBody = document.querySelector("#activitiesReport tbody");
+      aBody.innerHTML = activities.length
+        ? activities.map(a => {
+            const att = attendance.filter(x => x.activityId === a.id);
+            const p   = att.filter(x => x.status === "present").length;
+            const ab  = att.filter(x => x.status === "absent").length;
+            const c   = att.reduce((s, x) => s + (x.charge || 0), 0);
+            return `
+              <tr>
+                <td data-label="Activity"><strong>${escapeHTML(a.title)}</strong><br><small class="u-text-muted">${escapeHTML(a.location)}</small></td>
+                <td data-label="Date">${a.date}</td>
+                <td data-label="Status"><span class="u-pill ${a.status}">${a.status}</span></td>
+                <td data-label="Present"><span class="u-pill present">${p}</span></td>
+                <td data-label="Absent"><span class="u-pill absent">${ab}</span></td>
+                <td data-label="Charges">${c ? formatRWF(c) : "—"}</td>
+              </tr>
+            `;
+          }).join("")
+        : `<tr><td colspan="6"><div class="u-empty">No activities yet.</div></td></tr>`;
+
+      // Villager performance
+      const vBody = document.querySelector("#villagersReport tbody");
+      vBody.innerHTML = DEMO_VILLAGERS.map(v => {
+        const records = attendance.filter(a => a.villager === v);
+        const p  = records.filter(a => a.status === "present").length;
+        const ab = records.filter(a => a.status === "absent").length;
+        const c  = records.reduce((s, a) => s + (a.charge || 0), 0);
+        const rate = records.length ? Math.round(p / records.length * 100) + "%" : "—";
+        return `
+          <tr>
+            <td data-label="Villager"><strong>${escapeHTML(v)}</strong></td>
+            <td data-label="Present">${p}</td>
+            <td data-label="Absent">${ab}</td>
+            <td data-label="Rate">${rate}</td>
+            <td data-label="Charges">${c ? formatRWF(c) : "—"}</td>
+          </tr>
+        `;
+      }).join("");
+
+      // Charges
+      const cBody = document.querySelector("#chargesReport tbody");
+      const charges = attendance.filter(a => a.charge > 0);
+      cBody.innerHTML = charges.length
+        ? charges.map(ch => {
+            const act = activities.find(a => a.id === ch.activityId);
+            return `
+              <tr>
+                <td data-label="Villager">${escapeHTML(ch.villager)}</td>
+                <td data-label="Activity">${act ? escapeHTML(act.title) : "—"}</td>
+                <td data-label="Date">${act ? act.date : "—"}</td>
+                <td data-label="Amount"><strong>${formatRWF(ch.charge)}</strong></td>
+              </tr>
+            `;
+          }).join("")
+        : `<tr><td colspan="4"><div class="u-empty">No charges issued yet.</div></td></tr>`;
+    }
+
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d3b2a" />
+  <title>Leader Dashboard | Umuganda</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <nav class="u-navbar">
+    <div class="u-container u-navbar-inner">
+      <a href="index.html" class="u-brand">
+        <span class="u-brand-mark"></span>
+        Umuganda<span class="u-brand-dot">.</span>rw
+      </a>
+      <div class="u-nav-actions">
+        <span class="u-nav-user">
+          <span class="u-avatar" id="navAvatar">LD</span>
+          <span id="userName">Leader</span>
+        </span>
+        <button class="btn btn-ghost btn-sm btn-icon-mobile" onclick="logout()">
+          <i class="bi bi-box-arrow-right"></i> <span class="label">Logout</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <header class="u-dash-header">
+    <div class="u-container">
+      <span class="role-badge">Leader</span>
+      <h1>Welcome, <span id="leaderName">Leader</span></h1>
+      <p class="subtitle">Manage activities and confirm who attended.</p>
+    </div>
+  </header>
+
+  <main class="u-main">
+    <div class="u-container">
+
+      <div class="u-stats-grid">
+        <div class="u-stat"><div class="value" id="statActivities">0</div><div class="label">Activities</div></div>
+        <div class="u-stat gold"><div class="value" id="statUpcoming">0</div><div class="label">Upcoming</div></div>
+        <div class="u-stat blue"><div class="value" id="statRsvps">0</div><div class="label">Confirmations</div></div>
+        <div class="u-stat danger"><div class="value" id="statCharges">0</div><div class="label">Charges</div></div>
+      </div>
+
+      <!-- Cross-check attendance -->
+      <section class="u-panel">
+        <h3 class="u-panel-title">Confirm attendance (cross-check)</h3>
+        <p class="u-panel-subtitle">
+          Pick an activity, then mark each villager <strong>Present</strong> or
+          <strong>Absent</strong>. Absent villagers are charged 5,000 RWF automatically.
+        </p>
+
+        <div class="u-form-group">
+          <label class="u-form-label" for="actSelect">Select activity</label>
+          <select id="actSelect" class="u-select" onchange="renderAttendanceTable()">
+            <option value="">— Choose an activity —</option>
+          </select>
+        </div>
+
+        <div id="attendanceArea"></div>
+      </section>
+
+      <div class="u-grid cols-2">
+        <!-- Schedule new activity -->
+        <section class="u-panel">
+          <h3 class="u-panel-title">Schedule new activity</h3>
+          <form id="activityForm">
+            <div class="u-form-group">
+              <label class="u-form-label" for="actTitle">Title</label>
+              <input type="text" id="actTitle" class="u-input" placeholder="e.g. Road Cleaning" required />
+            </div>
+            <div class="u-form-row cols-2">
+              <div class="u-form-group">
+                <label class="u-form-label" for="actDate">Date</label>
+                <input type="date" id="actDate" class="u-input" required />
+              </div>
+              <div class="u-form-group">
+                <label class="u-form-label" for="actLocation">Location</label>
+                <input type="text" id="actLocation" class="u-input" placeholder="Sector Centre" required />
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">
+              <i class="bi bi-plus-circle"></i> Add Activity
+            </button>
+          </form>
+        </section>
+
+        <!-- Post announcement -->
+        <section class="u-panel">
+          <h3 class="u-panel-title">Post announcement</h3>
+          <form id="announceForm">
+            <div class="u-form-group">
+              <label class="u-form-label" for="annTitle">Title</label>
+              <input type="text" id="annTitle" class="u-input" required />
+            </div>
+            <div class="u-form-group">
+              <label class="u-form-label" for="annMessage">Message</label>
+              <textarea id="annMessage" class="u-textarea" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-gold btn-block">
+              <i class="bi bi-megaphone"></i> Publish
+            </button>
+          </form>
+        </section>
+      </div>
+
+      <section class="u-panel">
+        <h3 class="u-panel-title">All activities</h3>
+        <div class="u-table-wrap">
+          <table class="u-table" id="activitiesTable">
+            <thead>
+              <tr><th>Activity</th><th>Date</th><th>Location</th><th>Status</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="u-footer">
+    <div class="u-container"><p>© 2026 Umuganda Management System</p></div>
+  </footer>
+
+  <script src="js/script.js"></script>
+  <script>
+    const user = requireRole("leader");
+    if (user) {
+      document.getElementById("userName").textContent  = user.name;
+      document.getElementById("leaderName").textContent = user.name.split(" ")[0];
+      document.getElementById("navAvatar").textContent  = getInitials(user.name);
+    }
+
+    function markAttendance(activityId, villager, status) {
+      const attendance = getAttendance();
+      const idx = attendance.findIndex(a => a.activityId === activityId && a.villager === villager);
+      const record = {
+        id: idx >= 0 ? attendance[idx].id : Date.now() + Math.random(),
+        activityId, villager, status,
+        charge: status === "absent" ? ABSENCE_CHARGE : 0
+      };
+      if (idx >= 0) attendance[idx] = record; else attendance.push(record);
+      saveAttendance(attendance);
+
+      const activities = getActivities();
+      const aIdx = activities.findIndex(a => a.id === activityId);
+      if (aIdx >= 0 && activities[aIdx].status !== "completed") {
+        activities[aIdx].status = "completed";
+        saveActivities(activities);
+      }
+
+      toast(status === "present"
+        ? `${villager} marked present.`
+        : `${villager} marked absent — 5,000 RWF charge applied.`,
+        status === "present" ? "success" : "warn");
+      renderAll();
+    }
+    window.markAttendance = markAttendance;
+
+    function renderAttendanceTable() {
+      const sel = document.getElementById("actSelect");
+      const area = document.getElementById("attendanceArea");
+      const activityId = parseInt(sel.value);
+      if (!activityId) { area.innerHTML = ""; return; }
+
+      const activity = getActivities().find(a => a.id === activityId);
+      const rsvps    = getRsvps().filter(r => r.activityId === activityId);
+      const att      = getAttendance().filter(a => a.activityId === activityId);
+
+      const totalCharge  = att.reduce((s, a) => s + (a.charge || 0), 0);
+      const presentCount = att.filter(a => a.status === "present").length;
+      const absentCount  = att.filter(a => a.status === "absent").length;
+
+      const rows = DEMO_VILLAGERS.map(v => {
+        const rsvp = rsvps.find(r => r.villager === v);
+        const a    = att.find(x => x.villager === v);
+
+        let rsvpHtml = `<span class="u-pill muted">No response</span>`;
+        if (rsvp && rsvp.response === "available") {
+          rsvpHtml = `<span class="u-pill present">Will attend</span>`;
+        } else if (rsvp && rsvp.response === "unavailable") {
+          rsvpHtml = `<span class="u-pill absent">Cannot attend</span>
+                      <div class="u-text-muted" style="font-size:0.78rem;font-style:italic;margin-top:0.3rem;">${escapeHTML(rsvp.reason)}</div>`;
+        }
+
+        let confirmedHtml = a
+          ? `<span class="u-pill ${a.status}">${a.status}${a.charge ? ` · ${formatRWF(a.charge)}` : ""}</span>`
+          : `<span class="u-pill muted">Not confirmed</span>`;
+
+        let flag = "";
+        if (rsvp && a) {
+          if (rsvp.response === "available" && a.status === "absent") {
+            flag = `<span class="u-flag warn"><i class="bi bi-exclamation-triangle-fill"></i> Said attending but absent</span>`;
+          } else if (rsvp.response === "unavailable" && a.status === "present") {
+            flag = `<span class="u-flag good"><i class="bi bi-info-circle-fill"></i> Came despite saying no</span>`;
+          }
+        }
+
+        return `
+          <tr>
+            <td data-label="Villager"><strong>${escapeHTML(v)}</strong></td>
+            <td data-label="Confirmation">${rsvpHtml}</td>
+            <td data-label="Final">${confirmedHtml}${flag}</td>
+            <td data-label="Action" class="actions">
+              <button class="btn btn-primary btn-sm" onclick="markAttendance(${activityId}, '${v.replace(/'/g, "\\'")}', 'present')">
+                <i class="bi bi-check-lg"></i> Present
+              </button>
+              <button class="btn btn-danger btn-sm" onclick="markAttendance(${activityId}, '${v.replace(/'/g, "\\'")}', 'absent')">
+                <i class="bi bi-x-lg"></i> Absent
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+
+      area.innerHTML = `
+        <div class="u-summary">
+          <strong>${escapeHTML(activity.title)}</strong>
+          <span class="u-text-muted"> — ${activity.date} · ${escapeHTML(activity.location)}</span>
+          <div class="stats">
+            <span><i class="bi bi-check-circle-fill" style="color:var(--u-green-700);"></i> ${presentCount} present</span>
+            <span><i class="bi bi-x-circle-fill" style="color:var(--u-red);"></i> ${absentCount} absent</span>
+            <span><i class="bi bi-cash-coin" style="color:var(--u-gold-dark);"></i> ${formatRWF(totalCharge)} charges</span>
+          </div>
+        </div>
+        <div class="u-table-wrap">
+          <table class="u-table">
+            <thead>
+              <tr><th>Villager</th><th>Confirmation</th><th>Final</th><th>Action</th></tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      `;
+    }
+    window.renderAttendanceTable = renderAttendanceTable;
+
+    function renderAll() {
+      const activities = getActivities();
+      const rsvps      = getRsvps();
+      const attendance = getAttendance();
+
+      document.getElementById("statActivities").textContent = activities.length;
+      document.getElementById("statUpcoming")  .textContent = activities.filter(a => a.status === "scheduled").length;
+      document.getElementById("statRsvps")     .textContent = rsvps.length;
+      const totalCharges = attendance.reduce((s, a) => s + (a.charge || 0), 0);
+      document.getElementById("statCharges")   .textContent = totalCharges ? formatRWF(totalCharges) : "0";
+
+      const sel = document.getElementById("actSelect");
+      const currentVal = sel.value;
+      sel.innerHTML = '<option value="">— Choose an activity —</option>' +
+        activities.map(a => `<option value="${a.id}">${escapeHTML(a.title)} (${a.date})</option>`).join("");
+      if (currentVal) sel.value = currentVal;
+
+      const tbody = document.querySelector("#activitiesTable tbody");
+      tbody.innerHTML = activities.length
+        ? activities.map(a => `
+            <tr>
+              <td data-label="Activity"><strong>${escapeHTML(a.title)}</strong></td>
+              <td data-label="Date">${a.date}</td>
+              <td data-label="Location">${escapeHTML(a.location)}</td>
+              <td data-label="Status"><span class="u-pill ${a.status}">${a.status}</span></td>
+            </tr>
+          `).join("")
+        : `<tr><td colspan="4"><div class="u-empty">No activities yet.</div></td></tr>`;
+
+      if (sel.value) renderAttendanceTable();
+    }
+
+    document.getElementById("activityForm").addEventListener("submit", e => {
+      e.preventDefault();
+      const activities = getActivities();
+      activities.unshift({
+        id: Date.now(),
+        title:    document.getElementById("actTitle").value.trim(),
+        date:     document.getElementById("actDate").value,
+        location: document.getElementById("actLocation").value.trim(),
+        status: "scheduled"
+      });
+      saveActivities(activities);
+      e.target.reset();
+      renderAll();
+      toast("Activity scheduled successfully!");
+    });
+
+    document.getElementById("announceForm").addEventListener("submit", e => {
+      e.preventDefault();
+      const announcements = getAnnouncements();
+      announcements.unshift({
+        id: Date.now(),
+        title:   document.getElementById("annTitle").value.trim(),
+        message: document.getElementById("annMessage").value.trim(),
+        date:    new Date().toISOString().slice(0,10),
+        author:  "Leader " + user.name
+      });
+      saveAnnouncements(announcements);
+      e.target.reset();
+      toast("Announcement published!");
+    });
+
+    renderAll();
+  </script>
+</body>
+</html>
