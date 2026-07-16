@@ -6,11 +6,20 @@
   <meta name="theme-color" content="#0d3b2a" />
   <title>Villager Dashboard | Umuganda</title>
 
+  <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
+
+  <script src="js/script.js"></script>
+  <script>
+    const currentUser = guardRole("villager");
+    document.addEventListener("DOMContentLoaded", () => {
+      document.documentElement.style.visibility = "visible";
+    });
+  </script>
 </head>
 <body>
 
@@ -18,15 +27,24 @@
     <div class="u-container u-navbar-inner">
       <a href="index.html" class="u-brand">
         <span class="u-brand-mark"></span>
-        Umuganda<span class="u-brand-dot">.</span>rw
+        <span data-i18n="brand_name">Umuganda</span><span class="u-brand-dot">.</span>rw
       </a>
       <div class="u-nav-actions">
+        <span class="u-offline-badge">Offline</span>
         <span class="u-nav-user">
           <span class="u-avatar" id="navAvatar">VL</span>
           <span id="userName">Villager</span>
         </span>
+        <div class="u-lang-switch">
+          <button class="lang-btn active" data-lang="en" onclick="setLang('en')">EN</button>
+          <button class="lang-btn" data-lang="rw" onclick="setLang('rw')">RW</button>
+        </div>
+        <button class="u-theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
+          <i class="bi bi-moon-stars-fill icon-moon"></i>
+          <i class="bi bi-sun-fill icon-sun"></i>
+        </button>
         <button class="btn btn-ghost btn-sm btn-icon-mobile" onclick="logout()">
-          <i class="bi bi-box-arrow-right"></i> <span class="label">Logout</span>
+          <i class="bi bi-box-arrow-right"></i> <span class="label" data-i18n="logout">Logout</span>
         </button>
       </div>
     </div>
@@ -34,9 +52,9 @@
 
   <header class="u-dash-header">
     <div class="u-container">
-      <span class="role-badge">Villager</span>
-      <h1>Muraho, <span id="villagerName">Villager</span> 👋</h1>
-      <p class="subtitle">Confirm whether you can attend the next Umuganda.</p>
+      <span class="role-badge" data-i18n="role_villager">Villager</span>
+      <h1><span data-i18n="muraho">Muraho</span>, <span id="villagerName">Villager</span> 👋</h1>
+      <p class="subtitle" data-i18n="villager_subtitle">Confirm whether you can attend the next Umuganda.</p>
     </div>
   </header>
 
@@ -44,27 +62,68 @@
     <div class="u-container">
 
       <div class="u-stats-grid">
-        <div class="u-stat"><div class="value" id="statPresent">0</div><div class="label">Times Present</div></div>
-        <div class="u-stat danger"><div class="value" id="statAbsent">0</div><div class="label">Times Absent</div></div>
-        <div class="u-stat gold"><div class="value" id="statCharges">0</div><div class="label">Charges Owed</div></div>
-        <div class="u-stat blue"><div class="value" id="statRate">0%</div><div class="label">Attendance</div></div>
+        <div class="u-stat"><div class="value" id="statPresent">0</div><div class="label" data-i18n="times_present">Times Present</div></div>
+        <div class="u-stat danger"><div class="value" id="statAbsent">0</div><div class="label" data-i18n="times_absent">Times Absent</div></div>
+        <div class="u-stat gold"><div class="value" id="statCharges">0</div><div class="label" data-i18n="charges_owed">Charges Owed</div></div>
+        <div class="u-stat blue"><div class="value" id="statRate">0%</div><div class="label" data-i18n="attendance">Attendance</div></div>
+      </div>
+
+      <!-- Notifications banner -->
+      <div id="notifBanner" class="u-panel" style="display:none; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:1rem;">
+        <div>
+          <strong><i class="bi bi-bell-fill" style="color:var(--u-gold-dark);"></i>
+            <span data-i18n="enable_notifications">Enable reminders</span></strong>
+          <div class="u-text-muted" style="font-size:0.85rem;" data-i18n="reminder_hint">
+            Get notified 2 days before Umuganda.
+          </div>
+        </div>
+        <button class="btn btn-gold btn-sm" onclick="handleEnableNotifications()">
+          <i class="bi bi-bell"></i> <span data-i18n="enable_notifications">Enable reminders</span>
+        </button>
       </div>
 
       <div class="u-grid cols-7-5">
-
         <div>
+          <!-- Check-in panel -->
           <section class="u-panel">
-            <h3 class="u-panel-title">Upcoming Umuganda</h3>
-            <p class="u-panel-subtitle">Confirm if you can attend. If you can't, tell the leader why.</p>
+            <h3 class="u-panel-title" data-i18n="check_in">Check in</h3>
+            <p class="u-panel-subtitle">Verify your attendance on Umuganda day.</p>
+            <div class="u-action-row">
+              <button class="btn btn-primary" onclick="openQrCheckin()">
+                <i class="bi bi-qr-code-scan"></i> <span data-i18n="check_in_qr">Check in with QR code</span>
+              </button>
+              <button class="btn btn-outline" onclick="doGpsCheckin()">
+                <i class="bi bi-geo-alt-fill"></i> <span data-i18n="check_in_gps">Check in with GPS</span>
+              </button>
+            </div>
+          </section>
+
+          <!-- Upcoming activities -->
+          <section class="u-panel">
+            <h3 class="u-panel-title" data-i18n="upcoming_umuganda">Upcoming Umuganda</h3>
+            <p class="u-panel-subtitle" data-i18n="upcoming_hint">Confirm if you can attend.</p>
             <div id="upcomingList"></div>
           </section>
 
+          <!-- Payments -->
           <section class="u-panel">
-            <h3 class="u-panel-title">My attendance history</h3>
+            <h3 class="u-panel-title" data-i18n="payments">Payments</h3>
+            <p class="u-panel-subtitle" data-i18n="unpaid_charges">Unpaid charges</p>
+            <div id="paymentsList"></div>
+          </section>
+
+          <!-- History -->
+          <section class="u-panel">
+            <h3 class="u-panel-title" data-i18n="my_history">My attendance history</h3>
             <div class="u-table-wrap">
               <table class="u-table" id="historyTable">
                 <thead>
-                  <tr><th>Activity</th><th>Date</th><th>Status</th><th>Charge</th></tr>
+                  <tr>
+                    <th data-i18n="activity">Activity</th>
+                    <th data-i18n="date">Date</th>
+                    <th data-i18n="status">Status</th>
+                    <th data-i18n="charges">Charge</th>
+                  </tr>
                 </thead>
                 <tbody></tbody>
               </table>
@@ -73,64 +132,238 @@
         </div>
 
         <aside>
+          <!-- Suggestion box -->
           <section class="u-panel">
-            <h3 class="u-panel-title">Announcements</h3>
+            <h3 class="u-panel-title" data-i18n="submit_suggestion">Submit suggestion</h3>
+            <form id="suggestionForm">
+              <div class="u-form-group">
+                <textarea id="suggestionText" class="u-textarea" data-i18n-ph="suggestion_ph" required></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary btn-block">
+                <i class="bi bi-lightbulb"></i> <span data-i18n="submit_suggestion">Submit suggestion</span>
+              </button>
+            </form>
+          </section>
+
+          <!-- Announcements -->
+          <section class="u-panel">
+            <h3 class="u-panel-title" data-i18n="announcements">Announcements</h3>
             <div id="announceList"></div>
           </section>
         </aside>
-
       </div>
     </div>
   </main>
 
   <footer class="u-footer">
-    <div class="u-container"><p>© 2026 Umuganda Management System</p></div>
+    <div class="u-container"><p data-i18n="footer_line1">© 2026 Umuganda Management System</p></div>
   </footer>
 
-  <script src="js/script.js"></script>
+  <script src="js/i18n.js"></script>
   <script>
-    const user = requireRole("villager");
-    if (user) {
-      document.getElementById("userName").textContent     = user.name;
-      document.getElementById("villagerName").textContent = user.name.split(" ")[0];
-      document.getElementById("navAvatar").textContent    = getInitials(user.name);
-    }
+    document.getElementById("userName").textContent     = currentUser.name;
+    document.getElementById("villagerName").textContent = currentUser.name.split(" ")[0];
+    document.getElementById("navAvatar").textContent    = getInitials(currentUser.name);
 
+    // ---------- Notifications ----------
+    function updateNotifBanner() {
+      const banner = document.getElementById("notifBanner");
+      const perm = notifyPermission();
+      if (perm === "granted" || perm === "denied" || perm === "unsupported") {
+        banner.style.display = "none";
+      } else {
+        banner.style.display = "flex";
+      }
+    }
+    async function handleEnableNotifications() {
+      const perm = await requestNotifyPermission();
+      if (perm === "granted") {
+        toast(t("notifications_on"));
+        sendLocalNotification("Umuganda", t("notifications_on"));
+        checkAndSendReminders();
+      } else {
+        toast(t("notifications_denied"), "warn");
+      }
+      updateNotifBanner();
+    }
+    window.handleEnableNotifications = handleEnableNotifications;
+
+    // ---------- RSVP ----------
     function confirmAttend(activityId) {
       const rsvps = getRsvps();
-      const idx = rsvps.findIndex(r => r.activityId === activityId && r.villager === user.name);
-      const record = { id: Date.now(), activityId, villager: user.name, response: "available", reason: "" };
+      const idx = rsvps.findIndex(r => r.activityId === activityId && r.villager === currentUser.name);
+      const record = { id: Date.now(), activityId, villager: currentUser.name, response: "available", reason: "", approvalStatus: null };
       if (idx >= 0) rsvps[idx] = record; else rsvps.push(record);
       saveRsvps(rsvps);
-      toast("You confirmed attendance. Murakoze!");
+      toast(t("confirmed_toast"));
       render();
     }
-
     function declineAttend(activityId) {
-      const reason = prompt("Please provide a reason why you cannot attend:");
+      const reason = prompt(t("reason_prompt"));
       if (!reason || !reason.trim()) {
-        toast("A reason is required to decline.", "warn");
+        toast(t("reason_required"), "warn");
         return;
       }
       const rsvps = getRsvps();
-      const idx = rsvps.findIndex(r => r.activityId === activityId && r.villager === user.name);
-      const record = { id: Date.now(), activityId, villager: user.name, response: "unavailable", reason: reason.trim() };
+      const idx = rsvps.findIndex(r => r.activityId === activityId && r.villager === currentUser.name);
+      const record = { id: Date.now(), activityId, villager: currentUser.name, response: "unavailable", reason: reason.trim(), approvalStatus: "pending" };
       if (idx >= 0) rsvps[idx] = record; else rsvps.push(record);
       saveRsvps(rsvps);
-      toast("Your reason has been sent to the leader.");
+      toast(t("reason_sent_toast"));
       render();
     }
-
     window.confirmAttend = confirmAttend;
     window.declineAttend = declineAttend;
 
+    // ---------- QR check-in ----------
+    function openQrCheckin() {
+      const session = getQrSession();
+      const html = `
+        <button class="u-modal-close" onclick="closeModal()">&times;</button>
+        <h3><i class="bi bi-qr-code"></i> ${escapeHTML(t("check_in_qr"))}</h3>
+        <p class="u-text-muted">${escapeHTML(t("enter_code"))}</p>
+        <div class="u-form-group">
+          <input type="text" id="qrCodeInput" class="u-input" placeholder="UMG-XXXXXX" style="text-transform:uppercase; letter-spacing:0.1em;" />
+        </div>
+        <button class="btn btn-primary btn-block" onclick="submitQrCode()">
+          <i class="bi bi-check-circle"></i> ${escapeHTML(t("check_in"))}
+        </button>
+        ${session ? `<div class="u-hint" style="margin-top:1rem;"><i class="bi bi-info-circle"></i> A check-in session is active.</div>` : ""}
+      `;
+      openModal(html);
+      setTimeout(() => document.getElementById("qrCodeInput")?.focus(), 100);
+    }
+    window.openQrCheckin = openQrCheckin;
+
+    function submitQrCode() {
+      const input = document.getElementById("qrCodeInput").value.trim().toUpperCase();
+      const session = getQrSession();
+      if (!session || input !== session.code) {
+        toast(t("invalid_code"), "error");
+        return;
+      }
+      const result = doCheckin(session.activityId, "qr");
+      closeModal();
+      if (result === "checked") toast(t("checked_in"));
+      else if (result === "already") toast(t("already_checked_in"), "warn");
+    }
+    window.submitQrCode = submitQrCode;
+
+    // ---------- GPS check-in ----------
+    async function doGpsCheckin() {
+      const activities = getActivities();
+      const scheduled = activities.filter(a => a.status === "scheduled");
+      if (!scheduled.length) {
+        toast(t("no_upcoming"), "warn");
+        return;
+      }
+      const target = scheduled.sort((a,b) => new Date(a.date) - new Date(b.date))[0];
+      toast(t("getting_location"));
+      try {
+        const pos = await getCurrentPosition();
+        if (typeof target.lat !== "number" || typeof target.lng !== "number") {
+          toast("Activity has no coordinates.", "warn");
+          return;
+        }
+        const dist = distanceMeters(pos.lat, pos.lng, target.lat, target.lng);
+        if (dist > 200) {
+          toast(t("too_far") + " (" + Math.round(dist) + "m)", "error");
+          return;
+        }
+        const result = doCheckin(target.id, "gps");
+        if (result === "checked") toast(t("checked_in") + " (" + Math.round(dist) + "m)");
+        else if (result === "already") toast(t("already_checked_in"), "warn");
+      } catch (e) {
+        toast(t("location_denied"), "error");
+      }
+    }
+    window.doGpsCheckin = doGpsCheckin;
+
+    function doCheckin(activityId, method) {
+      const attendance = getAttendance();
+      const existing = attendance.find(a => a.activityId === activityId && a.villager === currentUser.name);
+      if (existing) return "already";
+      attendance.push({
+        id: Date.now(),
+        activityId,
+        villager: currentUser.name,
+        status: "present",
+        charge: 0,
+        paid: true,
+        momoRef: null,
+        method: method
+      });
+      saveAttendance(attendance);
+      render();
+      return "checked";
+    }
+
+    // ---------- Payments ----------
+    function openPayModal(attendanceId) {
+      const html = `
+        <button class="u-modal-close" onclick="closeModal()">&times;</button>
+        <h3><i class="bi bi-cash-coin"></i> ${escapeHTML(t("mark_as_paid"))}</h3>
+        <p class="u-text-muted">After paying with MTN MoMo, enter the reference number below.</p>
+        <div class="u-form-group">
+          <label class="u-form-label">${escapeHTML(t("momo_ref"))}</label>
+          <input type="text" id="momoRefInput" class="u-input" placeholder="${escapeHTML(t("momo_ref_ph"))}" />
+        </div>
+        <button class="btn btn-primary btn-block" onclick="submitPayment(${attendanceId})">
+          <i class="bi bi-check-circle"></i> ${escapeHTML(t("submit"))}
+        </button>
+      `;
+      openModal(html);
+    }
+    window.openPayModal = openPayModal;
+
+    function submitPayment(attendanceId) {
+      const ref = document.getElementById("momoRefInput").value.trim();
+      if (!ref) { toast(t("momo_ref"), "warn"); return; }
+      const payments = getPayments();
+      const attendance = getAttendance().find(a => a.id === attendanceId);
+      if (!attendance) return;
+      payments.push({
+        id: Date.now(),
+        attendanceId,
+        villager: currentUser.name,
+        amount: attendance.charge,
+        momoRef: ref,
+        status: "pending",
+        date: new Date().toISOString().slice(0,10)
+      });
+      savePayments(payments);
+      closeModal();
+      toast(t("payment_submitted"));
+      render();
+    }
+    window.submitPayment = submitPayment;
+
+    // ---------- Suggestions ----------
+    document.getElementById("suggestionForm").addEventListener("submit", e => {
+      e.preventDefault();
+      const msg = document.getElementById("suggestionText").value.trim();
+      if (!msg) return;
+      const suggestions = getSuggestions();
+      suggestions.unshift({
+        id: Date.now(),
+        message: msg,
+        date: new Date().toISOString().slice(0,10),
+        status: "new"
+      });
+      saveSuggestions(suggestions);
+      e.target.reset();
+      toast(t("suggestion_sent"));
+    });
+
+    // ---------- Render ----------
     function render() {
       const activities    = getActivities();
       const rsvps         = getRsvps();
       const attendance    = getAttendance();
       const announcements = getAnnouncements();
+      const payments      = getPayments();
 
-      const myAttendance = attendance.filter(a => a.villager === user.name);
+      const myAttendance = attendance.filter(a => a.villager === currentUser.name);
       const presentCount = myAttendance.filter(a => a.status === "present").length;
       const absentCount  = myAttendance.filter(a => a.status === "absent").length;
       const totalCharges = myAttendance.reduce((sum, a) => sum + (a.charge || 0), 0);
@@ -141,39 +374,80 @@
       document.getElementById("statRate")   .textContent = myAttendance.length
         ? Math.round(presentCount / myAttendance.length * 100) + "%" : "—";
 
-      // Upcoming
       const upcoming = activities.filter(a => a.status === "scheduled");
       const upBox = document.getElementById("upcomingList");
       upBox.innerHTML = upcoming.length
         ? upcoming.map(a => {
-            const myRsvp = rsvps.find(r => r.activityId === a.id && r.villager === user.name);
+            const myRsvp = rsvps.find(r => r.activityId === a.id && r.villager === currentUser.name);
             let statusBlock = "";
             if (myRsvp && myRsvp.response === "available") {
-              statusBlock = `<span class="u-pill present my-status"><i class="bi bi-check-circle-fill"></i> You confirmed attendance</span>`;
+              statusBlock = `<span class="u-pill present my-status"><i class="bi bi-check-circle-fill"></i> ${t("you_confirmed")}</span>`;
             } else if (myRsvp && myRsvp.response === "unavailable") {
-              statusBlock = `<span class="u-pill absent my-status"><i class="bi bi-x-circle-fill"></i> You said: cannot attend</span>
-                             <div class="reason">Reason: ${escapeHTML(myRsvp.reason)}</div>`;
+              const appLabel = myRsvp.approvalStatus === "approved" ? ` · ${t("excused")}` :
+                               myRsvp.approvalStatus === "rejected" ? ` · ${t("rejected")}` : "";
+              const appClass = myRsvp.approvalStatus === "approved" ? "excused" :
+                               myRsvp.approvalStatus === "rejected" ? "rejected" : "absent";
+              statusBlock = `<span class="u-pill ${appClass} my-status"><i class="bi bi-x-circle-fill"></i> ${t("you_said_no")}${appLabel}</span>
+                             <div class="reason">${t("reason")}: ${escapeHTML(myRsvp.reason)}</div>`;
             }
             return `
               <div class="u-activity-card">
                 <div class="title">${escapeHTML(a.title)}</div>
                 <div class="meta">
-                  <span><i class="bi bi-calendar3"></i>${a.date}</span>
-                  <span><i class="bi bi-geo-alt"></i>${escapeHTML(a.location)}</span>
+                  <span><i class="bi bi-calendar3"></i> ${a.date}</span>
+                  <span><i class="bi bi-geo-alt"></i> ${escapeHTML(a.location)}</span>
                 </div>
                 ${statusBlock}
                 <div class="actions">
                   <button class="btn btn-primary btn-sm" onclick="confirmAttend(${a.id})">
-                    <i class="bi bi-check-circle"></i> I will attend
+                    <i class="bi bi-check-circle"></i> ${t("i_will_attend")}
                   </button>
                   <button class="btn btn-danger-outline btn-sm" onclick="declineAttend(${a.id})">
-                    <i class="bi bi-x-circle"></i> I cannot attend
+                    <i class="bi bi-x-circle"></i> ${t("i_cannot_attend")}
                   </button>
                 </div>
               </div>
             `;
           }).join("")
-        : `<div class="u-empty"><span class="u-empty-icon">📭</span>No upcoming activities right now.</div>`;
+        : `<div class="u-empty"><span class="u-empty-icon">📭</span>${t("no_upcoming")}</div>`;
+
+      // Payments
+      const myPayments = payments.filter(p => p.villager === currentUser.name);
+      const unpaid = myAttendance.filter(a => {
+        if (a.charge <= 0 || a.paid) return false;
+        return !myPayments.find(p => p.attendanceId === a.id && p.status === "pending");
+      });
+      const pendingPayments = myPayments.filter(p => p.status === "pending");
+      const payBox = document.getElementById("paymentsList");
+      let payHtml = "";
+      if (unpaid.length) {
+        payHtml += unpaid.map(a => {
+          const act = activities.find(x => x.id === a.activityId);
+          return `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:0.7rem 0.9rem; background:var(--u-red-100); border-radius:var(--u-r-sm); margin-bottom:0.5rem; gap:0.5rem; flex-wrap:wrap;">
+              <div>
+                <strong>${act ? escapeHTML(act.title) : "—"}</strong>
+                <div class="u-text-muted" style="font-size:0.8rem;">${formatRWF(a.charge)}</div>
+              </div>
+              <button class="btn btn-gold btn-sm" onclick="openPayModal(${a.id})">
+                <i class="bi bi-cash"></i> ${t("mark_as_paid")}
+              </button>
+            </div>
+          `;
+        }).join("");
+      }
+      if (pendingPayments.length) {
+        payHtml += pendingPayments.map(p => `
+          <div style="padding:0.7rem 0.9rem; background:var(--u-gold-100); border-radius:var(--u-r-sm); margin-bottom:0.5rem;">
+            <strong>${formatRWF(p.amount)}</strong> · <span class="u-pill pending">${t("pending_payments")}</span>
+            <div class="u-text-muted" style="font-size:0.8rem;">MoMo ref: ${escapeHTML(p.momoRef)}</div>
+          </div>
+        `).join("");
+      }
+      if (!payHtml) {
+        payHtml = `<div class="u-empty"><span class="u-empty-icon">💰</span>${t("no_charges")}</div>`;
+      }
+      payBox.innerHTML = payHtml;
 
       // History
       const hBody = document.querySelector("#historyTable tbody");
@@ -182,14 +456,14 @@
             const act = activities.find(a => a.id === att.activityId);
             return `
               <tr>
-                <td data-label="Activity">${act ? escapeHTML(act.title) : "—"}</td>
-                <td data-label="Date">${act ? act.date : "—"}</td>
-                <td data-label="Status"><span class="u-pill ${att.status}">${att.status}</span></td>
-                <td data-label="Charge">${att.charge ? formatRWF(att.charge) : "—"}</td>
+                <td data-label="${t('activity')}">${act ? escapeHTML(act.title) : "—"}</td>
+                <td data-label="${t('date')}">${act ? act.date : "—"}</td>
+                <td data-label="${t('status')}"><span class="u-pill ${att.status}">${t(att.status)}</span></td>
+                <td data-label="${t('charges')}">${att.charge ? formatRWF(att.charge) : "—"}</td>
               </tr>
             `;
           }).join("")
-        : `<tr><td colspan="4"><div class="u-empty">No attendance history yet.</div></td></tr>`;
+        : `<tr><td colspan="4"><div class="u-empty">${t("no_history")}</div></td></tr>`;
 
       // Announcements
       const annBox = document.getElementById("announceList");
@@ -201,10 +475,14 @@
               <small><i class="bi bi-person"></i> ${escapeHTML(a.author)} • ${a.date}</small>
             </div>
           `).join("")
-        : `<div class="u-empty"><span class="u-empty-icon">📢</span>No announcements yet.</div>`;
+        : `<div class="u-empty"><span class="u-empty-icon">📢</span>${t("no_announcements")}</div>`;
+
+      updateNotifBanner();
     }
 
     render();
+    checkAndSendReminders();
+    document.addEventListener("langchange", render);
   </script>
 </body>
 </html>

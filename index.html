@@ -4,7 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0d3b2a" />
-  <title>Umuganda Management System | Welcome</title>
+  <title>Umuganda Management System</title>
+
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -18,32 +21,45 @@
     <div class="u-container u-navbar-inner">
       <a href="index.html" class="u-brand">
         <span class="u-brand-mark"></span>
-        Umuganda<span class="u-brand-dot">.</span>rw
+        <span data-i18n="brand_name">Umuganda</span><span class="u-brand-dot">.</span>rw
       </a>
       <div class="u-nav-actions">
-        <a href="login.html" class="btn btn-primary">
-          <i class="bi bi-box-arrow-in-right"></i> <span>Login</span>
+        <span class="u-offline-badge">Offline</span>
+        <div class="u-lang-switch" role="tablist" aria-label="Language">
+          <button class="lang-btn active" data-lang="en" onclick="setLang('en')">EN</button>
+          <button class="lang-btn" data-lang="rw" onclick="setLang('rw')">RW</button>
+        </div>
+        <button class="u-theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
+          <i class="bi bi-moon-stars-fill icon-moon"></i>
+          <i class="bi bi-sun-fill icon-sun"></i>
+        </button>
+        <a href="login.html" class="btn btn-primary btn-sm">
+          <i class="bi bi-box-arrow-in-right"></i>
+          <span data-i18n="login">Login</span>
         </a>
       </div>
     </div>
   </nav>
 
-  <!-- Hero -->
   <section class="u-hero">
     <div class="u-container">
       <div class="u-grid-hero">
         <div class="u-fade-up">
-          <span class="u-tag">Community First</span>
-          <h1>Digital <span class="accent">Umuganda</span><br />for every community</h1>
-          <p class="lead">
+          <span class="u-tag" data-i18n="tagline">Community First</span>
+          <h1>
+            <span data-i18n="hero_title_pre">Digital</span>
+            <span class="accent" data-i18n="hero_title_accent">Umuganda</span><br />
+            <span data-i18n="hero_title_post">for every community</span>
+          </h1>
+          <p class="lead" data-i18n="hero_lead">
             Confirm attendance, manage community work and keep records — all in one place.
-            Built for Rwanda's monthly tradition of working together.
           </p>
           <div class="u-hero-actions">
             <a href="login.html" class="btn btn-primary btn-lg">
-              <i class="bi bi-arrow-right-circle"></i> Get Started
+              <i class="bi bi-arrow-right-circle"></i>
+              <span data-i18n="get_started">Get Started</span>
             </a>
-            <a href="#how" class="btn btn-outline btn-lg">How it works</a>
+            <a href="#how" class="btn btn-outline btn-lg" data-i18n="how_it_works">How it works</a>
           </div>
         </div>
         <div class="u-fade-up d2 u-text-center">
@@ -53,57 +69,46 @@
     </div>
   </section>
 
-  <!-- How it works -->
   <section id="how" class="u-section">
     <div class="u-container">
       <div class="u-section-head">
-        <h2>How it works</h2>
-        <p>Three roles, one simple flow.</p>
+        <h2 data-i18n="how_it_works">How it works</h2>
+        <p data-i18n="how_subtitle">Three roles, one simple flow.</p>
       </div>
 
       <div class="u-features">
         <div class="u-feature u-fade-up">
           <span class="u-feature-icon"><i class="bi bi-people-fill"></i></span>
-          <h4>1. Villager</h4>
-          <p>Sees upcoming Umuganda and confirms whether they will attend. If unavailable, they provide a reason.</p>
+          <h4>1. <span data-i18n="role_villager">Villager</span></h4>
+          <p data-i18n="step_villager">Sees upcoming Umuganda and confirms attendance.</p>
         </div>
         <div class="u-feature u-fade-up d1">
           <span class="u-feature-icon"><i class="bi bi-person-workspace"></i></span>
-          <h4>2. Leader</h4>
-          <p>Schedules activities and, on Umuganda day, cross-checks who confirmed and who came. Marks Present or Absent. Charges absentees.</p>
+          <h4>2. <span data-i18n="role_leader">Leader</span></h4>
+          <p data-i18n="step_leader">Schedules activities and cross-checks attendance.</p>
         </div>
         <div class="u-feature u-fade-up d2">
           <span class="u-feature-icon"><i class="bi bi-clipboard-data"></i></span>
-          <h4>3. Inspector</h4>
-          <p>Views overall reports — activities, attendance rates, charges issued — to ensure community work runs smoothly.</p>
+          <h4>3. <span data-i18n="role_inspector">Inspector</span></h4>
+          <p data-i18n="step_inspector">Views overall reports and monitors the system.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- About -->
   <section class="u-section tinted">
     <div class="u-container">
       <div class="u-grid-hero">
         <div>
-          <h2>What is Umuganda?</h2>
-          <p>
-            Umuganda is a Rwandan tradition of community work held on the last
-            Saturday of every month. Citizens come together to clean, build and
-            improve their neighbourhood — strengthening unity and shared
-            responsibility.
-          </p>
-          <p class="u-text-muted u-mb-0">
-            This platform makes attendance fair and transparent: villagers
-            confirm in advance, leaders verify on the day, and inspectors keep
-            the whole system accountable.
-          </p>
+          <h2 data-i18n="what_is_umuganda">What is Umuganda?</h2>
+          <p data-i18n="what_is_body">Umuganda is a Rwandan tradition of community work...</p>
+          <p class="u-text-muted u-mb-0" data-i18n="what_is_sub">This platform makes attendance fair and transparent.</p>
         </div>
         <div class="u-stats-grid">
-          <div class="u-stat"><div class="value">3</div><div class="label">User Roles</div></div>
-          <div class="u-stat gold"><div class="value">5,000</div><div class="label">RWF Fine</div></div>
-          <div class="u-stat blue"><div class="value">12</div><div class="label">Per Year</div></div>
-          <div class="u-stat"><div class="value">100%</div><div class="label">Transparent</div></div>
+          <div class="u-stat"><div class="value">3</div><div class="label" data-i18n="user_roles">User Roles</div></div>
+          <div class="u-stat gold"><div class="value">5,000</div><div class="label" data-i18n="rwf_fine">RWF Fine</div></div>
+          <div class="u-stat blue"><div class="value">12</div><div class="label" data-i18n="per_year">Per Year</div></div>
+          <div class="u-stat"><div class="value">100%</div><div class="label" data-i18n="transparent">Transparent</div></div>
         </div>
       </div>
     </div>
@@ -111,11 +116,23 @@
 
   <footer class="u-footer">
     <div class="u-container">
-      <p>© 2026 Umuganda Management System</p>
-      <p class="sub">Built for the communities of Rwanda 🇷🇼</p>
+      <p data-i18n="footer_line1">© 2026 Umuganda Management System</p>
+      <p class="sub" data-i18n="footer_line2">Built for the communities of Rwanda 🇷🇼</p>
     </div>
   </footer>
 
+  <!-- PWA install banner -->
+  <div class="u-install-banner" id="installBanner">
+    <i class="bi bi-download" style="font-size:1.4rem;color:var(--u-green-700);"></i>
+    <div class="msg">
+      <strong>Install Umuganda app</strong>
+      <span class="u-text-muted" style="font-size:0.8rem;">Works offline, faster access.</span>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="installApp()">Install</button>
+    <button class="btn btn-ghost btn-sm" onclick="dismissInstall()" aria-label="Dismiss"><i class="bi bi-x"></i></button>
+  </div>
+
+  <script src="js/i18n.js"></script>
   <script src="js/script.js"></script>
 </body>
 </html>

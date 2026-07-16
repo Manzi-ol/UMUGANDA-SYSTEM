@@ -6,11 +6,27 @@
   <meta name="theme-color" content="#0d3b2a" />
   <title>Inspector Dashboard | Umuganda</title>
 
+  <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Chart.js (charts) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- Leaflet (map) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
   <link rel="stylesheet" href="css/style.css" />
+
+  <script src="js/script.js"></script>
+  <script>
+    const currentUser = guardRole("inspector");
+    document.addEventListener("DOMContentLoaded", () => {
+      document.documentElement.style.visibility = "visible";
+    });
+  </script>
 </head>
 <body>
 
@@ -18,15 +34,24 @@
     <div class="u-container u-navbar-inner">
       <a href="index.html" class="u-brand">
         <span class="u-brand-mark"></span>
-        Umuganda<span class="u-brand-dot">.</span>rw
+        <span data-i18n="brand_name">Umuganda</span><span class="u-brand-dot">.</span>rw
       </a>
       <div class="u-nav-actions">
+        <span class="u-offline-badge">Offline</span>
         <span class="u-nav-user">
           <span class="u-avatar" id="navAvatar">IN</span>
           <span id="userName">Inspector</span>
         </span>
+        <div class="u-lang-switch">
+          <button class="lang-btn active" data-lang="en" onclick="setLang('en')">EN</button>
+          <button class="lang-btn" data-lang="rw" onclick="setLang('rw')">RW</button>
+        </div>
+        <button class="u-theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
+          <i class="bi bi-moon-stars-fill icon-moon"></i>
+          <i class="bi bi-sun-fill icon-sun"></i>
+        </button>
         <button class="btn btn-ghost btn-sm btn-icon-mobile" onclick="logout()">
-          <i class="bi bi-box-arrow-right"></i> <span class="label">Logout</span>
+          <i class="bi bi-box-arrow-right"></i> <span class="label" data-i18n="logout">Logout</span>
         </button>
       </div>
     </div>
@@ -34,9 +59,9 @@
 
   <header class="u-dash-header">
     <div class="u-container">
-      <span class="role-badge">Inspector</span>
-      <h1>System Reports, <span id="inspectorName">Inspector</span></h1>
-      <p class="subtitle">Overview of all Umuganda activities and attendance.</p>
+      <span class="role-badge" data-i18n="role_inspector">Inspector</span>
+      <h1><span data-i18n="system_reports">System Reports</span>, <span id="inspectorName">Inspector</span></h1>
+      <p class="subtitle" data-i18n="inspector_subtitle">Overview of all Umuganda activities and attendance.</p>
     </div>
   </header>
 
@@ -44,21 +69,106 @@
     <div class="u-container">
 
       <div class="u-stats-grid">
-        <div class="u-stat"><div class="value" id="statActivities">0</div><div class="label">Total Activities</div></div>
-        <div class="u-stat blue"><div class="value" id="statCompleted">0</div><div class="label">Completed</div></div>
-        <div class="u-stat gold"><div class="value" id="statAttRate">0%</div><div class="label">Avg Attendance</div></div>
-        <div class="u-stat danger"><div class="value" id="statCharges">0</div><div class="label">Total Charges</div></div>
+        <div class="u-stat"><div class="value" id="statActivities">0</div><div class="label" data-i18n="total_activities">Total Activities</div></div>
+        <div class="u-stat blue"><div class="value" id="statCompleted">0</div><div class="label" data-i18n="completed">Completed</div></div>
+        <div class="u-stat gold"><div class="value" id="statAttRate">0%</div><div class="label" data-i18n="avg_attendance">Avg Attendance</div></div>
+        <div class="u-stat danger"><div class="value" id="statCharges">0</div><div class="label" data-i18n="total_charges">Total Charges</div></div>
       </div>
 
+      <!-- Export toolbar -->
       <section class="u-panel">
-        <h3 class="u-panel-title">Activities report</h3>
-        <p class="u-panel-subtitle">Attendance breakdown for every activity.</p>
+        <h3 class="u-panel-title" data-i18n="export_report">Export monthly report</h3>
+        <div class="u-export-row">
+          <button class="btn btn-primary" onclick="exportPDF()">
+            <i class="bi bi-file-earmark-pdf-fill"></i> <span data-i18n="export_pdf">Export PDF</span>
+          </button>
+          <button class="btn btn-outline" onclick="exportActivitiesCSV()">
+            <i class="bi bi-file-earmark-spreadsheet"></i> <span data-i18n="export_csv">Export CSV</span> (Activities)
+          </button>
+          <button class="btn btn-outline" onclick="exportAttendanceCSV()">
+            <i class="bi bi-file-earmark-spreadsheet"></i> <span data-i18n="export_csv">Export CSV</span> (Attendance)
+          </button>
+        </div>
+      </section>
+
+      <!-- Predictions -->
+      <section class="u-panel">
+        <h3 class="u-panel-title" data-i18n="predictions">Predictions</h3>
+        <p class="u-panel-subtitle" data-i18n="prediction_hint">Based on historical attendance patterns.</p>
+        <div class="u-prediction" id="predictionCard">
+          <div class="label" data-i18n="prediction_next">Next Umuganda forecast</div>
+          <div class="big" id="predictionValue">—</div>
+          <div class="label" data-i18n="prediction_expected">Expected attendance</div>
+          <div id="predictionTrend"></div>
+        </div>
+      </section>
+
+      <!-- Analytics charts -->
+      <section class="u-panel">
+        <h3 class="u-panel-title" data-i18n="analytics">Analytics</h3>
+
+        <div class="u-charts-grid">
+          <div>
+            <h4 style="font-size:0.95rem;margin-bottom:0.25rem;" data-i18n="attendance_trend">Attendance trend</h4>
+            <p class="u-text-muted" style="font-size:0.8rem;margin:0;" data-i18n="trend_hint">How attendance has changed over time.</p>
+            <div class="u-chart-wrap"><canvas id="trendChart"></canvas></div>
+          </div>
+
+          <div>
+            <h4 style="font-size:0.95rem;margin-bottom:0.25rem;" data-i18n="present_vs_absent">Present vs Absent</h4>
+            <p class="u-text-muted" style="font-size:0.8rem;margin:0;" data-i18n="per_activity">Per activity breakdown.</p>
+            <div class="u-chart-wrap"><canvas id="paChart"></canvas></div>
+          </div>
+
+          <div>
+            <h4 style="font-size:0.95rem;margin-bottom:0.25rem;" data-i18n="top_attenders">Top attenders</h4>
+            <p class="u-text-muted" style="font-size:0.8rem;margin:0;" data-i18n="top_hint">Villagers with the best attendance records.</p>
+            <div class="u-chart-wrap"><canvas id="topChart"></canvas></div>
+          </div>
+
+          <div>
+            <h4 style="font-size:0.95rem;margin-bottom:0.25rem;">Method breakdown</h4>
+            <p class="u-text-muted" style="font-size:0.8rem;margin:0;">Leader confirmation vs QR/GPS self check-in.</p>
+            <div class="u-chart-wrap"><canvas id="methodChart"></canvas></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Leaderboard -->
+      <section class="u-panel">
+        <h3 class="u-panel-title" data-i18n="leaderboard">Community leaderboard</h3>
+        <p class="u-panel-subtitle" data-i18n="leaderboard_hint">Top villagers of the month by attendance.</p>
+        <div id="leaderboardList"></div>
+      </section>
+
+      <!-- Community Map -->
+      <section class="u-panel">
+        <h3 class="u-panel-title" data-i18n="community_map">Community map</h3>
+        <p class="u-panel-subtitle" data-i18n="map_hint">Where Umuganda activities take place.</p>
+        <div class="u-map-wrap">
+          <div id="umuMap"></div>
+          <div class="u-map-fallback" id="mapFallback" style="display:none;">
+            <div>
+              <span class="u-empty-icon">🗺️</span>
+              <div data-i18n="map_unavailable">Map unavailable (no internet)</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Activities report -->
+      <section class="u-panel">
+        <h3 class="u-panel-title" data-i18n="activities_report">Activities report</h3>
         <div class="u-table-wrap">
           <table class="u-table" id="activitiesReport">
             <thead>
               <tr>
-                <th>Activity</th><th>Date</th><th>Status</th>
-                <th>Present</th><th>Absent</th><th>Charges</th>
+                <th data-i18n="activity">Activity</th>
+                <th data-i18n="date">Date</th>
+                <th data-i18n="status">Status</th>
+                <th data-i18n="present">Present</th>
+                <th data-i18n="absent">Absent</th>
+                <th data-i18n="charges">Charges</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -66,15 +176,18 @@
         </div>
       </section>
 
+      <!-- Villager performance -->
       <section class="u-panel">
-        <h3 class="u-panel-title">Villager performance</h3>
-        <p class="u-panel-subtitle">How each villager has performed across all activities.</p>
+        <h3 class="u-panel-title" data-i18n="villager_performance">Villager performance</h3>
         <div class="u-table-wrap">
           <table class="u-table" id="villagersReport">
             <thead>
               <tr>
-                <th>Villager</th><th>Present</th><th>Absent</th>
-                <th>Rate</th><th>Charges</th>
+                <th data-i18n="villager_col">Villager</th>
+                <th data-i18n="present">Present</th>
+                <th data-i18n="absent">Absent</th>
+                <th data-i18n="rate">Rate</th>
+                <th data-i18n="charges">Charges</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -82,13 +195,19 @@
         </div>
       </section>
 
+      <!-- Charges issued -->
       <section class="u-panel">
-        <h3 class="u-panel-title">Charges issued</h3>
-        <p class="u-panel-subtitle">All absence fines applied by the leader.</p>
+        <h3 class="u-panel-title" data-i18n="charges_issued">Charges issued</h3>
         <div class="u-table-wrap">
           <table class="u-table" id="chargesReport">
             <thead>
-              <tr><th>Villager</th><th>Activity</th><th>Date</th><th>Amount</th></tr>
+              <tr>
+                <th data-i18n="villager_col">Villager</th>
+                <th data-i18n="activity">Activity</th>
+                <th data-i18n="date">Date</th>
+                <th data-i18n="amount">Amount</th>
+                <th data-i18n="status">Status</th>
+              </tr>
             </thead>
             <tbody></tbody>
           </table>
@@ -99,18 +218,426 @@
   </main>
 
   <footer class="u-footer">
-    <div class="u-container"><p>© 2026 Umuganda Management System</p></div>
+    <div class="u-container"><p data-i18n="footer_line1">© 2026 Umuganda Management System</p></div>
   </footer>
 
-  <script src="js/script.js"></script>
+  <script src="js/i18n.js"></script>
   <script>
-    const user = requireRole("inspector");
-    if (user) {
-      document.getElementById("userName").textContent      = user.name;
-      document.getElementById("inspectorName").textContent = user.name.split(" ")[0];
-      document.getElementById("navAvatar").textContent     = getInitials(user.name);
+    document.getElementById("userName").textContent      = currentUser.name;
+    document.getElementById("inspectorName").textContent = currentUser.name.split(" ")[0];
+    document.getElementById("navAvatar").textContent     = getInitials(currentUser.name);
+
+    // Chart instances so we can destroy on re-render
+    let trendChart, paChart, topChart, methodChart, mapInstance;
+    // Track markers so we can remove them on re-render
+    let mapMarkers = [];
+
+    function getThemeColors() {
+      const dark = document.documentElement.getAttribute("data-theme") === "dark";
+      return {
+        text:  dark ? "#e8eae5" : "#1a1f1c",
+        muted: dark ? "#94a094" : "#6b7569",
+        grid:  dark ? "#2a3833" : "#e7ebe5",
+        green: dark ? "#4fb47c" : "#1a6b48",
+        gold:  dark ? "#f0b83a" : "#e0a528",
+        red:   dark ? "#ef5a4b" : "#c0392b",
+        blue:  dark ? "#5aa8e8" : "#1565c0"
+      };
     }
 
+    function renderCharts() {
+      const c = getThemeColors();
+      const activities = getActivities();
+      const attendance = getAttendance();
+
+      Chart.defaults.color = c.text;
+      Chart.defaults.font.family = "'Manrope', 'Inter', sans-serif";
+      Chart.defaults.borderColor = c.grid;
+
+      // ---- Trend chart (line): attendance rate per activity in date order ----
+      const completedByDate = activities.filter(a => a.status === "completed")
+        .sort((a,b) => new Date(a.date) - new Date(b.date));
+      const trendLabels = completedByDate.map(a => a.date);
+      const trendData = completedByDate.map(a => {
+        const recs = attendance.filter(x => x.activityId === a.id);
+        if (!recs.length) return 0;
+        const p = recs.filter(x => x.status === "present").length;
+        return Math.round(p / recs.length * 100);
+      });
+      if (trendChart) trendChart.destroy();
+      trendChart = new Chart(document.getElementById("trendChart"), {
+        type: "line",
+        data: {
+          labels: trendLabels,
+          datasets: [{
+            label: t("avg_attendance") + " (%)",
+            data: trendData,
+            borderColor: c.green,
+            backgroundColor: c.green + "22",
+            fill: true,
+            tension: 0.3,
+            pointRadius: 5,
+            pointBackgroundColor: c.gold,
+            borderWidth: 3
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: { y: { min: 0, max: 100, ticks: { callback: v => v + "%" } } },
+          plugins: { legend: { display: false } }
+        }
+      });
+
+      // ---- Present vs Absent stacked bar per activity ----
+      const paLabels = activities.map(a => a.title.length > 18 ? a.title.slice(0, 16) + "…" : a.title);
+      const paPresent = activities.map(a => attendance.filter(x => x.activityId === a.id && x.status === "present").length);
+      const paAbsent  = activities.map(a => attendance.filter(x => x.activityId === a.id && x.status === "absent").length);
+      if (paChart) paChart.destroy();
+      paChart = new Chart(document.getElementById("paChart"), {
+        type: "bar",
+        data: {
+          labels: paLabels,
+          datasets: [
+            { label: t("present"), data: paPresent, backgroundColor: c.green, borderRadius: 4 },
+            { label: t("absent"),  data: paAbsent,  backgroundColor: c.red,   borderRadius: 4 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } } },
+          plugins: { legend: { position: "bottom" } }
+        }
+      });
+
+      // ---- Top attenders horizontal bar ----
+      const ranking = villagerRanking();
+      const topLabels = ranking.map(r => r.name.split(" ")[0]);
+      const topData   = ranking.map(r => r.rate);
+      const topColors = ranking.map(r => r.rate >= 80 ? c.green : r.rate >= 50 ? c.gold : c.red);
+      if (topChart) topChart.destroy();
+      topChart = new Chart(document.getElementById("topChart"), {
+        type: "bar",
+        data: {
+          labels: topLabels,
+          datasets: [{
+            label: t("rate"),
+            data: topData,
+            backgroundColor: topColors,
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          indexAxis: "y",
+          scales: { x: { max: 100, ticks: { callback: v => v + "%" } } },
+          plugins: { legend: { display: false } }
+        }
+      });
+
+      // ---- Method breakdown (doughnut): leader vs QR vs GPS ----
+      const methodCounts = { leader: 0, qr: 0, gps: 0 };
+      attendance.forEach(a => {
+        const m = a.method || "leader";
+        if (methodCounts[m] !== undefined) methodCounts[m]++;
+      });
+      if (methodChart) methodChart.destroy();
+      methodChart = new Chart(document.getElementById("methodChart"), {
+        type: "doughnut",
+        data: {
+          labels: ["Leader confirmed", "QR code check-in", "GPS check-in"],
+          datasets: [{
+            data: [methodCounts.leader, methodCounts.qr, methodCounts.gps],
+            backgroundColor: [c.green, c.gold, c.blue],
+            borderWidth: 2,
+            borderColor: c.grid
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: "bottom" } },
+          cutout: "60%"
+        }
+      });
+    }
+
+    // ---------- Predictions ----------
+    function renderPrediction() {
+      const p = predictNextAttendance();
+      const el = document.getElementById("predictionValue");
+      const trendEl = document.getElementById("predictionTrend");
+      if (!p) {
+        el.textContent = "—";
+        trendEl.innerHTML = `<div class="u-text-muted" style="opacity:0.8; font-size:0.85rem;">${t("no_data")}</div>`;
+        return;
+      }
+      el.textContent = p.rate + "%";
+      let icon = "bi-arrow-right";
+      let label = "Stable";
+      if (p.trend > 2)  { icon = "bi-arrow-up-right"; label = "Improving"; }
+      if (p.trend < -2) { icon = "bi-arrow-down-right"; label = "Declining"; }
+      trendEl.innerHTML = `<span class="trend"><i class="bi ${icon}"></i> ${label} · based on ${p.samples} activities</span>`;
+    }
+
+    // ---------- Leaderboard ----------
+    function renderLeaderboard() {
+      const ranking = villagerRanking();
+      const box = document.getElementById("leaderboardList");
+      const medals = ["🥇", "🥈", "🥉"];
+      box.innerHTML = ranking.length
+        ? ranking.map((r, i) => {
+            const rankClass = i < 3 ? `rank-${i+1}` : "";
+            const medal = medals[i] || (i + 1);
+            const perfect = r.rate === 100 && r.total > 0;
+            const atRisk  = r.rate < 60 && r.total > 0;
+            return `
+              <div class="u-leaderboard-item ${rankClass}">
+                <div class="u-leaderboard-rank">${medal}</div>
+                <div class="u-leaderboard-info">
+                  <div class="name">${escapeHTML(r.name)}
+                    ${perfect ? `<span class="u-pill present" style="margin-left:6px;">${t("perfect_attendance")}</span>` : ""}
+                    ${atRisk  ? `<span class="u-pill absent"  style="margin-left:6px;">${t("at_risk")}</span>` : ""}
+                  </div>
+                  <div class="meta">
+                    ${r.present} ${t("present").toLowerCase()} · ${r.absent} ${t("absent").toLowerCase()} · ${r.total} ${t("activities_completed").toLowerCase()}
+                  </div>
+                </div>
+                <div class="u-leaderboard-score">${r.rate}%</div>
+              </div>
+            `;
+          }).join("")
+        : `<div class="u-empty"><span class="u-empty-icon">🏆</span>${t("no_data")}</div>`;
+    }
+
+    // ---------- Map ----------
+    function renderMap() {
+      const mapEl = document.getElementById("umuMap");
+      if (!mapEl || typeof L === "undefined") {
+        document.getElementById("mapFallback").style.display = "grid";
+        return;
+      }
+      const activities = getActivities().filter(a => typeof a.lat === "number" && typeof a.lng === "number");
+      if (!activities.length) {
+        mapEl.innerHTML = `<div class="u-empty" style="padding:2rem;"><span class="u-empty-icon">📍</span>${t("no_data")}</div>`;
+        return;
+      }
+      // Center at first activity if map doesn't exist
+      const center = [activities[0].lat, activities[0].lng];
+      if (!mapInstance) {
+        try {
+          mapInstance = L.map("umuMap", { attributionControl: false }).setView(center, 15);
+          L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+            attribution: "© OpenStreetMap"
+          }).addTo(mapInstance);
+          L.control.attribution({ prefix: false }).addTo(mapInstance);
+        } catch (e) {
+          document.getElementById("mapFallback").style.display = "grid";
+          return;
+        }
+      }
+      // Clear previous markers
+      mapMarkers.forEach(m => mapInstance.removeLayer(m));
+      mapMarkers = [];
+      // Add markers
+      activities.forEach(a => {
+        const color = a.status === "completed" ? "#1a6b48" : "#e0a528";
+        const icon = L.divIcon({
+          className: "u-map-marker",
+          html: `<div style="background:${color}; width:28px; height:28px; border-radius:50% 50% 50% 0; transform:rotate(-45deg); border:3px solid #fff; box-shadow:0 4px 12px rgba(0,0,0,0.3); display:grid; place-items:center;">
+            <span style="transform:rotate(45deg); font-size:14px;">${a.status === "completed" ? "✓" : "📅"}</span>
+          </div>`,
+          iconSize: [28, 28],
+          iconAnchor: [14, 28]
+        });
+        const marker = L.marker([a.lat, a.lng], { icon }).addTo(mapInstance);
+        const att = getAttendance().filter(x => x.activityId === a.id);
+        const p = att.filter(x => x.status === "present").length;
+        marker.bindPopup(`
+          <strong>${escapeHTML(a.title)}</strong><br>
+          <small>${a.date} · ${escapeHTML(a.location)}</small><br>
+          <span style="color:#1a6b48;">✓ ${p} present</span>
+        `);
+        mapMarkers.push(marker);
+      });
+      // Fit bounds
+      if (mapMarkers.length > 1) {
+        const group = L.featureGroup(mapMarkers);
+        mapInstance.fitBounds(group.getBounds().pad(0.2));
+      }
+    }
+
+    // ---------- Tables ----------
+    function renderTables() {
+      const activities = getActivities();
+      const attendance = getAttendance();
+      const payments   = getPayments();
+
+      const aBody = document.querySelector("#activitiesReport tbody");
+      aBody.innerHTML = activities.length
+        ? activities.map(a => {
+            const att = attendance.filter(x => x.activityId === a.id);
+            const p   = att.filter(x => x.status === "present").length;
+            const ab  = att.filter(x => x.status === "absent").length;
+            const c   = att.reduce((s, x) => s + (x.charge || 0), 0);
+            return `
+              <tr>
+                <td data-label="${t('activity')}"><strong>${escapeHTML(a.title)}</strong><br><small class="u-text-muted">${escapeHTML(a.location)}</small></td>
+                <td data-label="${t('date')}">${a.date}</td>
+                <td data-label="${t('status')}"><span class="u-pill ${a.status}">${t(a.status) || a.status}</span></td>
+                <td data-label="${t('present')}"><span class="u-pill present">${p}</span></td>
+                <td data-label="${t('absent')}"><span class="u-pill absent">${ab}</span></td>
+                <td data-label="${t('charges')}">${c ? formatRWF(c) : "—"}</td>
+              </tr>
+            `;
+          }).join("")
+        : `<tr><td colspan="6"><div class="u-empty">${t("no_activities")}</div></td></tr>`;
+
+      const vBody = document.querySelector("#villagersReport tbody");
+      vBody.innerHTML = DEMO_VILLAGERS.map(v => {
+        const records = attendance.filter(a => a.villager === v);
+        const p  = records.filter(a => a.status === "present").length;
+        const ab = records.filter(a => a.status === "absent").length;
+        const c  = records.reduce((s, a) => s + (a.charge || 0), 0);
+        const rate = records.length ? Math.round(p / records.length * 100) + "%" : "—";
+        return `
+          <tr>
+            <td data-label="${t('villager_col')}"><strong>${escapeHTML(v)}</strong></td>
+            <td data-label="${t('present')}">${p}</td>
+            <td data-label="${t('absent')}">${ab}</td>
+            <td data-label="${t('rate')}">${rate}</td>
+            <td data-label="${t('charges')}">${c ? formatRWF(c) : "—"}</td>
+          </tr>
+        `;
+      }).join("");
+
+      const cBody = document.querySelector("#chargesReport tbody");
+      const charges = attendance.filter(a => a.charge > 0);
+      cBody.innerHTML = charges.length
+        ? charges.map(ch => {
+            const act = activities.find(a => a.id === ch.activityId);
+            const pay = payments.find(p => p.attendanceId === ch.id);
+            const status = ch.paid ? "paid" : (pay ? pay.status : "unpaid");
+            return `
+              <tr>
+                <td data-label="${t('villager_col')}">${escapeHTML(ch.villager)}</td>
+                <td data-label="${t('activity')}">${act ? escapeHTML(act.title) : "—"}</td>
+                <td data-label="${t('date')}">${act ? act.date : "—"}</td>
+                <td data-label="${t('amount')}"><strong>${formatRWF(ch.charge)}</strong></td>
+                <td data-label="${t('status')}"><span class="u-pill ${status}">${t(status) || status}</span></td>
+              </tr>
+            `;
+          }).join("")
+        : `<tr><td colspan="5"><div class="u-empty">${t("no_charges")}</div></td></tr>`;
+    }
+
+    // ---------- Exports ----------
+    function exportActivitiesCSV() {
+      const activities = getActivities();
+      const attendance = getAttendance();
+      const rows = [["ID", "Title", "Date", "Location", "Status", "Present", "Absent", "Charges (RWF)"]];
+      activities.forEach(a => {
+        const att = attendance.filter(x => x.activityId === a.id);
+        const p   = att.filter(x => x.status === "present").length;
+        const ab  = att.filter(x => x.status === "absent").length;
+        const c   = att.reduce((s, x) => s + (x.charge || 0), 0);
+        rows.push([a.id, a.title, a.date, a.location, a.status, p, ab, c]);
+      });
+      downloadCSV("umuganda-activities-" + new Date().toISOString().slice(0,10) + ".csv", rows);
+      toast(t("csv_downloaded"));
+    }
+    window.exportActivitiesCSV = exportActivitiesCSV;
+
+    function exportAttendanceCSV() {
+      const activities = getActivities();
+      const attendance = getAttendance();
+      const rows = [["Villager", "Activity", "Date", "Status", "Method", "Charge (RWF)", "Paid"]];
+      attendance.forEach(a => {
+        const act = activities.find(x => x.id === a.activityId);
+        rows.push([
+          a.villager,
+          act ? act.title : "—",
+          act ? act.date : "—",
+          a.status,
+          a.method || "leader",
+          a.charge || 0,
+          a.paid ? "Yes" : "No"
+        ]);
+      });
+      downloadCSV("umuganda-attendance-" + new Date().toISOString().slice(0,10) + ".csv", rows);
+      toast(t("csv_downloaded"));
+    }
+    window.exportAttendanceCSV = exportAttendanceCSV;
+
+    function exportPDF() {
+      const activities = getActivities();
+      const attendance = getAttendance();
+      const ranking    = villagerRanking();
+      const prediction = predictNextAttendance();
+
+      const totalActivities = activities.length;
+      const completed = activities.filter(a => a.status === "completed").length;
+      const presentCount = attendance.filter(a => a.status === "present").length;
+      const totalRecords = attendance.length;
+      const attRate = totalRecords ? Math.round(presentCount / totalRecords * 100) + "%" : "—";
+      const totalCharges = attendance.reduce((s, a) => s + (a.charge || 0), 0);
+
+      const html = `
+        <h1>Umuganda Monthly Report</h1>
+        <div class="meta">Generated by Inspector ${escapeHTML(currentUser.name)} · ${new Date().toLocaleDateString()}</div>
+
+        <div class="stat-row">
+          <div class="stat"><div class="v">${totalActivities}</div><div class="l">Total Activities</div></div>
+          <div class="stat"><div class="v">${completed}</div><div class="l">Completed</div></div>
+          <div class="stat"><div class="v">${attRate}</div><div class="l">Avg Attendance</div></div>
+          <div class="stat"><div class="v">${formatRWF(totalCharges)}</div><div class="l">Total Charges</div></div>
+        </div>
+
+        ${prediction ? `
+          <h2>Next Umuganda Forecast</h2>
+          <p><strong>Expected attendance:</strong> ${prediction.rate}% · Based on ${prediction.samples} previous activities.</p>
+        ` : ""}
+
+        <h2>Activities</h2>
+        <table>
+          <thead><tr><th>Title</th><th>Date</th><th>Status</th><th>Present</th><th>Absent</th><th>Charges</th></tr></thead>
+          <tbody>
+            ${activities.map(a => {
+              const att = attendance.filter(x => x.activityId === a.id);
+              const p = att.filter(x => x.status === "present").length;
+              const ab = att.filter(x => x.status === "absent").length;
+              const c = att.reduce((s, x) => s + (x.charge || 0), 0);
+              return `<tr><td>${escapeHTML(a.title)}</td><td>${a.date}</td><td>${a.status}</td><td>${p}</td><td>${ab}</td><td>${formatRWF(c)}</td></tr>`;
+            }).join("")}
+          </tbody>
+        </table>
+
+        <h2>Community Leaderboard</h2>
+        <table>
+          <thead><tr><th>Rank</th><th>Villager</th><th>Present</th><th>Absent</th><th>Rate</th></tr></thead>
+          <tbody>
+            ${ranking.map((r, i) =>
+              `<tr><td>${i + 1}</td><td>${escapeHTML(r.name)}</td><td>${r.present}</td><td>${r.absent}</td><td>${r.rate}%</td></tr>`
+            ).join("")}
+          </tbody>
+        </table>
+
+        <h2>Charges Issued</h2>
+        <table>
+          <thead><tr><th>Villager</th><th>Activity</th><th>Date</th><th>Amount</th><th>Paid</th></tr></thead>
+          <tbody>
+            ${attendance.filter(a => a.charge > 0).map(ch => {
+              const act = activities.find(a => a.id === ch.activityId);
+              return `<tr><td>${escapeHTML(ch.villager)}</td><td>${act ? escapeHTML(act.title) : "—"}</td><td>${act ? act.date : "—"}</td><td>${formatRWF(ch.charge)}</td><td>${ch.paid ? "Yes" : "No"}</td></tr>`;
+            }).join("") || `<tr><td colspan="5" style="text-align:center; color:#6b7569;">No charges issued.</td></tr>`}
+          </tbody>
+        </table>
+      `;
+      openPrintReport(html);
+      toast(t("pdf_downloaded"));
+    }
+    window.exportPDF = exportPDF;
+
+    // ---------- Master render ----------
     function render() {
       const activities = getActivities();
       const attendance = getAttendance();
@@ -126,65 +653,22 @@
       document.getElementById("statAttRate")   .textContent = attRate;
       document.getElementById("statCharges")   .textContent = totalCharges ? formatRWF(totalCharges) : "0";
 
-      // Activities report
-      const aBody = document.querySelector("#activitiesReport tbody");
-      aBody.innerHTML = activities.length
-        ? activities.map(a => {
-            const att = attendance.filter(x => x.activityId === a.id);
-            const p   = att.filter(x => x.status === "present").length;
-            const ab  = att.filter(x => x.status === "absent").length;
-            const c   = att.reduce((s, x) => s + (x.charge || 0), 0);
-            return `
-              <tr>
-                <td data-label="Activity"><strong>${escapeHTML(a.title)}</strong><br><small class="u-text-muted">${escapeHTML(a.location)}</small></td>
-                <td data-label="Date">${a.date}</td>
-                <td data-label="Status"><span class="u-pill ${a.status}">${a.status}</span></td>
-                <td data-label="Present"><span class="u-pill present">${p}</span></td>
-                <td data-label="Absent"><span class="u-pill absent">${ab}</span></td>
-                <td data-label="Charges">${c ? formatRWF(c) : "—"}</td>
-              </tr>
-            `;
-          }).join("")
-        : `<tr><td colspan="6"><div class="u-empty">No activities yet.</div></td></tr>`;
-
-      // Villager performance
-      const vBody = document.querySelector("#villagersReport tbody");
-      vBody.innerHTML = DEMO_VILLAGERS.map(v => {
-        const records = attendance.filter(a => a.villager === v);
-        const p  = records.filter(a => a.status === "present").length;
-        const ab = records.filter(a => a.status === "absent").length;
-        const c  = records.reduce((s, a) => s + (a.charge || 0), 0);
-        const rate = records.length ? Math.round(p / records.length * 100) + "%" : "—";
-        return `
-          <tr>
-            <td data-label="Villager"><strong>${escapeHTML(v)}</strong></td>
-            <td data-label="Present">${p}</td>
-            <td data-label="Absent">${ab}</td>
-            <td data-label="Rate">${rate}</td>
-            <td data-label="Charges">${c ? formatRWF(c) : "—"}</td>
-          </tr>
-        `;
-      }).join("");
-
-      // Charges
-      const cBody = document.querySelector("#chargesReport tbody");
-      const charges = attendance.filter(a => a.charge > 0);
-      cBody.innerHTML = charges.length
-        ? charges.map(ch => {
-            const act = activities.find(a => a.id === ch.activityId);
-            return `
-              <tr>
-                <td data-label="Villager">${escapeHTML(ch.villager)}</td>
-                <td data-label="Activity">${act ? escapeHTML(act.title) : "—"}</td>
-                <td data-label="Date">${act ? act.date : "—"}</td>
-                <td data-label="Amount"><strong>${formatRWF(ch.charge)}</strong></td>
-              </tr>
-            `;
-          }).join("")
-        : `<tr><td colspan="4"><div class="u-empty">No charges issued yet.</div></td></tr>`;
+      renderPrediction();
+      renderTables();
+      renderLeaderboard();
+      renderCharts();
+      // Map needs to be after DOM is settled
+      setTimeout(renderMap, 100);
     }
 
     render();
+    document.addEventListener("langchange", render);
+
+    // Re-render charts on theme change
+    const themeObserver = new MutationObserver(() => {
+      renderCharts();
+    });
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
   </script>
 </body>
 </html>

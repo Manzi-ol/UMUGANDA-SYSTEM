@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#0d3b2a" />
   <title>Login | Umuganda</title>
 
+  <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -18,76 +19,84 @@
     <div class="u-container u-navbar-inner">
       <a href="index.html" class="u-brand">
         <span class="u-brand-mark"></span>
-        Umuganda<span class="u-brand-dot">.</span>rw
+        <span data-i18n="brand_name">Umuganda</span><span class="u-brand-dot">.</span>rw
       </a>
-      <a href="index.html" class="btn btn-ghost btn-sm">
-        <i class="bi bi-arrow-left"></i> <span class="u-hidden-mobile">Back</span>
-      </a>
+      <div class="u-nav-actions">
+        <span class="u-offline-badge">Offline</span>
+        <div class="u-lang-switch">
+          <button class="lang-btn active" data-lang="en" onclick="setLang('en')">EN</button>
+          <button class="lang-btn" data-lang="rw" onclick="setLang('rw')">RW</button>
+        </div>
+        <button class="u-theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
+          <i class="bi bi-moon-stars-fill icon-moon"></i>
+          <i class="bi bi-sun-fill icon-sun"></i>
+        </button>
+        <a href="index.html" class="btn btn-ghost btn-sm">
+          <i class="bi bi-arrow-left"></i> <span class="u-hidden-mobile" data-i18n="back">Back</span>
+        </a>
+      </div>
     </div>
   </nav>
 
   <div class="u-login-wrap">
     <div class="u-login-card u-fade-up">
-
       <div class="u-text-center u-mb-2">
         <div class="icon-circle"><i class="bi bi-shield-lock-fill"></i></div>
-        <h2 class="u-mb-1" style="font-size:1.4rem;">Sign in</h2>
-        <p class="u-text-muted u-mb-0" style="font-size:0.9rem;">Choose your role and enter your credentials</p>
+        <h2 class="u-mb-1" style="font-size:1.4rem;" data-i18n="signin">Sign in</h2>
+        <p class="u-text-muted u-mb-0" style="font-size:0.9rem;" data-i18n="login_subtitle">Choose your role and enter your credentials</p>
       </div>
 
-      <label class="u-form-label" style="margin-top:1rem;">I am a...</label>
+      <label class="u-form-label" style="margin-top:1rem;" data-i18n="i_am_a">I am a...</label>
       <div class="u-role-grid">
         <button type="button" class="u-role-btn active" data-role="leader">
           <span class="icon"><i class="bi bi-person-workspace"></i></span>
-          Leader
+          <span data-i18n="role_leader">Leader</span>
         </button>
         <button type="button" class="u-role-btn" data-role="villager">
           <span class="icon"><i class="bi bi-people-fill"></i></span>
-          Villager
+          <span data-i18n="role_villager">Villager</span>
         </button>
         <button type="button" class="u-role-btn" data-role="inspector">
           <span class="icon"><i class="bi bi-clipboard-check"></i></span>
-          Inspector
+          <span data-i18n="role_inspector">Inspector</span>
         </button>
       </div>
 
       <form id="loginForm" novalidate>
         <div class="u-form-group">
-          <label class="u-form-label" for="username">Username</label>
-          <input type="text" id="username" class="u-input" placeholder="Enter your username" autocomplete="username" required />
+          <label class="u-form-label" for="username" data-i18n="username">Username</label>
+          <input type="text" id="username" class="u-input" data-i18n-ph="username_ph" autocomplete="username" required />
         </div>
         <div class="u-form-group">
-          <label class="u-form-label" for="password">Password</label>
-          <input type="password" id="password" class="u-input" placeholder="Enter your password" autocomplete="current-password" required />
+          <label class="u-form-label" for="password" data-i18n="password">Password</label>
+          <input type="password" id="password" class="u-input" data-i18n-ph="password_ph" autocomplete="current-password" required />
         </div>
 
         <div id="loginError" class="u-error" style="display:none;"></div>
 
         <button type="submit" class="btn btn-primary btn-block btn-lg">
-          <i class="bi bi-box-arrow-in-right"></i> Sign In
+          <i class="bi bi-box-arrow-in-right"></i> <span data-i18n="signin">Sign in</span>
         </button>
 
         <div class="u-hint">
-          <strong>Demo credentials</strong><br />
-          Leader: <code>leader</code> / <code>leader123</code><br />
-          Villager: <code>villager</code> / <code>villager123</code><br />
-          Inspector: <code>inspector</code> / <code>inspector123</code>
+          <strong data-i18n="demo_creds">Demo credentials</strong><br />
+          <span data-i18n="role_leader">Leader</span>: <code>leader</code> / <code>leader123</code><br />
+          <span data-i18n="role_villager">Villager</span>: <code>villager</code> / <code>villager123</code><br />
+          <span data-i18n="role_inspector">Inspector</span>: <code>inspector</code> / <code>inspector123</code>
         </div>
       </form>
-
     </div>
   </div>
 
+  <script src="js/i18n.js"></script>
   <script src="js/script.js"></script>
   <script>
     let selectedRole = "leader";
-
     document.querySelectorAll(".u-role-btn").forEach(btn => {
       btn.addEventListener("click", () => {
         document.querySelectorAll(".u-role-btn").forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
         selectedRole = btn.dataset.role;
-        // Auto-fill demo username for convenience
         document.getElementById("username").value = selectedRole;
       });
     });
@@ -101,10 +110,10 @@
       const user = login(username, password, selectedRole);
       if (user) {
         errorBox.style.display = "none";
-        toast("Welcome back, " + user.name.split(" ")[0] + "!");
+        toast(t("welcome_back") + ", " + user.name.split(" ")[0] + "!");
         setTimeout(() => { window.location.href = user.role + ".html"; }, 600);
       } else {
-        errorBox.innerHTML = '<i class="bi bi-exclamation-circle"></i> Invalid credentials for the selected role.';
+        errorBox.innerHTML = '<i class="bi bi-exclamation-circle"></i> ' + t("invalid_creds");
         errorBox.style.display = "block";
       }
     });

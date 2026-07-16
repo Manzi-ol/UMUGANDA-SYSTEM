@@ -6,11 +6,21 @@
   <meta name="theme-color" content="#0d3b2a" />
   <title>Leader Dashboard | Umuganda</title>
 
+  <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
+
+  <script src="js/script.js"></script>
+  <script src="js/qrcode.js"></script>
+  <script>
+    const currentUser = guardRole("leader");
+    document.addEventListener("DOMContentLoaded", () => {
+      document.documentElement.style.visibility = "visible";
+    });
+  </script>
 </head>
 <body>
 
@@ -18,15 +28,24 @@
     <div class="u-container u-navbar-inner">
       <a href="index.html" class="u-brand">
         <span class="u-brand-mark"></span>
-        Umuganda<span class="u-brand-dot">.</span>rw
+        <span data-i18n="brand_name">Umuganda</span><span class="u-brand-dot">.</span>rw
       </a>
       <div class="u-nav-actions">
+        <span class="u-offline-badge">Offline</span>
         <span class="u-nav-user">
           <span class="u-avatar" id="navAvatar">LD</span>
           <span id="userName">Leader</span>
         </span>
+        <div class="u-lang-switch">
+          <button class="lang-btn active" data-lang="en" onclick="setLang('en')">EN</button>
+          <button class="lang-btn" data-lang="rw" onclick="setLang('rw')">RW</button>
+        </div>
+        <button class="u-theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
+          <i class="bi bi-moon-stars-fill icon-moon"></i>
+          <i class="bi bi-sun-fill icon-sun"></i>
+        </button>
         <button class="btn btn-ghost btn-sm btn-icon-mobile" onclick="logout()">
-          <i class="bi bi-box-arrow-right"></i> <span class="label">Logout</span>
+          <i class="bi bi-box-arrow-right"></i> <span class="label" data-i18n="logout">Logout</span>
         </button>
       </div>
     </div>
@@ -34,9 +53,9 @@
 
   <header class="u-dash-header">
     <div class="u-container">
-      <span class="role-badge">Leader</span>
-      <h1>Welcome, <span id="leaderName">Leader</span></h1>
-      <p class="subtitle">Manage activities and confirm who attended.</p>
+      <span class="role-badge" data-i18n="role_leader">Leader</span>
+      <h1><span data-i18n="welcome">Welcome</span>, <span id="leaderName">Leader</span></h1>
+      <p class="subtitle" data-i18n="leader_subtitle">Manage activities and confirm who attended.</p>
     </div>
   </header>
 
@@ -44,80 +63,142 @@
     <div class="u-container">
 
       <div class="u-stats-grid">
-        <div class="u-stat"><div class="value" id="statActivities">0</div><div class="label">Activities</div></div>
-        <div class="u-stat gold"><div class="value" id="statUpcoming">0</div><div class="label">Upcoming</div></div>
-        <div class="u-stat blue"><div class="value" id="statRsvps">0</div><div class="label">Confirmations</div></div>
-        <div class="u-stat danger"><div class="value" id="statCharges">0</div><div class="label">Charges</div></div>
+        <div class="u-stat"><div class="value" id="statActivities">0</div><div class="label" data-i18n="activities">Activities</div></div>
+        <div class="u-stat gold"><div class="value" id="statUpcoming">0</div><div class="label" data-i18n="upcoming">Upcoming</div></div>
+        <div class="u-stat blue"><div class="value" id="statRsvps">0</div><div class="label" data-i18n="confirmations">Confirmations</div></div>
+        <div class="u-stat danger"><div class="value" id="statCharges">0</div><div class="label" data-i18n="charges">Charges</div></div>
       </div>
 
-      <!-- Cross-check attendance -->
+      <!-- Absence requests requiring approval -->
+      <section class="u-panel" id="absenceRequestsPanel">
+        <h3 class="u-panel-title" data-i18n="absence_requests">Absence requests</h3>
+        <p class="u-panel-subtitle">Approve or reject villager reasons for missing Umuganda.</p>
+        <div id="absenceRequestsList"></div>
+      </section>
+
+      <!-- Cross-check panel with QR generation + print -->
       <section class="u-panel">
-        <h3 class="u-panel-title">Confirm attendance (cross-check)</h3>
-        <p class="u-panel-subtitle">
-          Pick an activity, then mark each villager <strong>Present</strong> or
-          <strong>Absent</strong>. Absent villagers are charged 5,000 RWF automatically.
-        </p>
+        <h3 class="u-panel-title" data-i18n="cross_check">Confirm attendance (cross-check)</h3>
+        <p class="u-panel-subtitle" data-i18n="cross_check_hint">Pick an activity, then mark each villager Present or Absent.</p>
 
         <div class="u-form-group">
-          <label class="u-form-label" for="actSelect">Select activity</label>
+          <label class="u-form-label" for="actSelect" data-i18n="select_activity">Select activity</label>
           <select id="actSelect" class="u-select" onchange="renderAttendanceTable()">
-            <option value="">— Choose an activity —</option>
+            <option value="" data-i18n="choose_activity">— Choose an activity —</option>
           </select>
+        </div>
+
+        <div class="u-action-row" id="activityActions" style="display:none;">
+          <button class="btn btn-gold btn-sm" onclick="openQrSession()">
+            <i class="bi bi-qr-code"></i> <span data-i18n="generate_qr">Generate QR</span>
+          </button>
+          <button class="btn btn-outline btn-sm" onclick="window.print()">
+            <i class="bi bi-printer"></i> <span data-i18n="print_roster">Print roster</span>
+          </button>
         </div>
 
         <div id="attendanceArea"></div>
       </section>
 
+      <!-- Payment confirmations -->
+      <section class="u-panel">
+        <h3 class="u-panel-title" data-i18n="pending_payments">Pending payments</h3>
+        <div id="pendingPaymentsList"></div>
+      </section>
+
+      <!-- Suggestions from villagers -->
+      <section class="u-panel">
+        <h3 class="u-panel-title" data-i18n="suggestions_box">Suggestions from villagers</h3>
+        <div id="suggestionsList"></div>
+      </section>
+
       <div class="u-grid cols-2">
-        <!-- Schedule new activity -->
         <section class="u-panel">
-          <h3 class="u-panel-title">Schedule new activity</h3>
+          <h3 class="u-panel-title" data-i18n="schedule_new">Schedule new activity</h3>
           <form id="activityForm">
             <div class="u-form-group">
-              <label class="u-form-label" for="actTitle">Title</label>
-              <input type="text" id="actTitle" class="u-input" placeholder="e.g. Road Cleaning" required />
+              <label class="u-form-label" for="actTitle" data-i18n="title">Title</label>
+              <input type="text" id="actTitle" class="u-input" required />
             </div>
             <div class="u-form-row cols-2">
               <div class="u-form-group">
-                <label class="u-form-label" for="actDate">Date</label>
+                <label class="u-form-label" for="actDate" data-i18n="date">Date</label>
                 <input type="date" id="actDate" class="u-input" required />
               </div>
               <div class="u-form-group">
-                <label class="u-form-label" for="actLocation">Location</label>
-                <input type="text" id="actLocation" class="u-input" placeholder="Sector Centre" required />
+                <label class="u-form-label" for="actLocation" data-i18n="location">Location</label>
+                <input type="text" id="actLocation" class="u-input" required />
+              </div>
+            </div>
+            <div class="u-form-row cols-2">
+              <div class="u-form-group">
+                <label class="u-form-label" for="actLat">Latitude</label>
+                <input type="number" step="any" id="actLat" class="u-input" placeholder="-1.9536" />
+              </div>
+              <div class="u-form-group">
+                <label class="u-form-label" for="actLng">Longitude</label>
+                <input type="number" step="any" id="actLng" class="u-input" placeholder="30.1044" />
               </div>
             </div>
             <button type="submit" class="btn btn-primary btn-block">
-              <i class="bi bi-plus-circle"></i> Add Activity
+              <i class="bi bi-plus-circle"></i> <span data-i18n="add_activity">Add Activity</span>
             </button>
           </form>
         </section>
 
-        <!-- Post announcement -->
         <section class="u-panel">
-          <h3 class="u-panel-title">Post announcement</h3>
+          <h3 class="u-panel-title" data-i18n="post_announcement">Post announcement</h3>
           <form id="announceForm">
             <div class="u-form-group">
-              <label class="u-form-label" for="annTitle">Title</label>
+              <label class="u-form-label" for="annTitle" data-i18n="title">Title</label>
               <input type="text" id="annTitle" class="u-input" required />
             </div>
             <div class="u-form-group">
-              <label class="u-form-label" for="annMessage">Message</label>
+              <label class="u-form-label" for="annMessage" data-i18n="message">Message</label>
               <textarea id="annMessage" class="u-textarea" required></textarea>
             </div>
             <button type="submit" class="btn btn-gold btn-block">
-              <i class="bi bi-megaphone"></i> Publish
+              <i class="bi bi-megaphone"></i> <span data-i18n="publish">Publish</span>
             </button>
           </form>
         </section>
       </div>
 
+      <!-- Villager profiles -->
       <section class="u-panel">
-        <h3 class="u-panel-title">All activities</h3>
+        <h3 class="u-panel-title" data-i18n="villager_profiles">Villager profiles</h3>
+        <div id="villagerProfilesList"></div>
+      </section>
+
+      <!-- Photo evidence uploader -->
+      <section class="u-panel">
+        <h3 class="u-panel-title" data-i18n="photo_evidence">Photo evidence</h3>
+        <p class="u-panel-subtitle">Upload photos from completed activities.</p>
+        <div class="u-form-group">
+          <label class="u-form-label">Activity</label>
+          <select id="photoActivity" class="u-select">
+            <option value="">— Choose an activity —</option>
+          </select>
+        </div>
+        <label class="u-file-btn">
+          <i class="bi bi-camera-fill"></i> <span data-i18n="upload_photo">Upload photo</span>
+          <input type="file" accept="image/*" id="photoInput" onchange="handlePhotoUpload(event)" />
+        </label>
+        <div id="photoGrid" class="u-photo-grid" style="margin-top:1rem;"></div>
+      </section>
+
+      <!-- All activities -->
+      <section class="u-panel">
+        <h3 class="u-panel-title" data-i18n="all_activities">All activities</h3>
         <div class="u-table-wrap">
           <table class="u-table" id="activitiesTable">
             <thead>
-              <tr><th>Activity</th><th>Date</th><th>Location</th><th>Status</th></tr>
+              <tr>
+                <th data-i18n="activity">Activity</th>
+                <th data-i18n="date">Date</th>
+                <th data-i18n="location">Location</th>
+                <th data-i18n="status">Status</th>
+              </tr>
             </thead>
             <tbody></tbody>
           </table>
@@ -128,25 +209,54 @@
   </main>
 
   <footer class="u-footer">
-    <div class="u-container"><p>© 2026 Umuganda Management System</p></div>
+    <div class="u-container"><p data-i18n="footer_line1">© 2026 Umuganda Management System</p></div>
   </footer>
 
-  <script src="js/script.js"></script>
+  <script src="js/i18n.js"></script>
   <script>
-    const user = requireRole("leader");
-    if (user) {
-      document.getElementById("userName").textContent  = user.name;
-      document.getElementById("leaderName").textContent = user.name.split(" ")[0];
-      document.getElementById("navAvatar").textContent  = getInitials(user.name);
-    }
+    document.getElementById("userName").textContent  = currentUser.name;
+    document.getElementById("leaderName").textContent = currentUser.name.split(" ")[0];
+    document.getElementById("navAvatar").textContent  = getInitials(currentUser.name);
 
+    // ---------- Absence approval ----------
+    function approveAbsence(rsvpId) {
+      const rsvps = getRsvps();
+      const idx = rsvps.findIndex(r => r.id === rsvpId);
+      if (idx < 0) return;
+      rsvps[idx].approvalStatus = "approved";
+      saveRsvps(rsvps);
+      toast(t("excused"));
+      renderAll();
+    }
+    function rejectAbsence(rsvpId) {
+      const rsvps = getRsvps();
+      const idx = rsvps.findIndex(r => r.id === rsvpId);
+      if (idx < 0) return;
+      rsvps[idx].approvalStatus = "rejected";
+      saveRsvps(rsvps);
+      toast(t("rejected"), "warn");
+      renderAll();
+    }
+    window.approveAbsence = approveAbsence;
+    window.rejectAbsence = rejectAbsence;
+
+    // ---------- Mark attendance (updated to skip charge if excused) ----------
     function markAttendance(activityId, villager, status) {
       const attendance = getAttendance();
       const idx = attendance.findIndex(a => a.activityId === activityId && a.villager === villager);
+
+      // Check if this villager has an approved excuse
+      const rsvp = getRsvps().find(r => r.activityId === activityId && r.villager === villager);
+      const isExcused = rsvp && rsvp.response === "unavailable" && rsvp.approvalStatus === "approved";
+
       const record = {
         id: idx >= 0 ? attendance[idx].id : Date.now() + Math.random(),
         activityId, villager, status,
-        charge: status === "absent" ? ABSENCE_CHARGE : 0
+        // No charge if excused
+        charge: (status === "absent" && !isExcused) ? ABSENCE_CHARGE : 0,
+        paid: (status === "absent" && !isExcused) ? false : true,
+        momoRef: null,
+        method: "leader"
       };
       if (idx >= 0) attendance[idx] = record; else attendance.push(record);
       saveAttendance(attendance);
@@ -158,19 +268,202 @@
         saveActivities(activities);
       }
 
-      toast(status === "present"
-        ? `${villager} marked present.`
-        : `${villager} marked absent — 5,000 RWF charge applied.`,
-        status === "present" ? "success" : "warn");
+      const msg = status === "present"
+        ? villager + " " + t("marked_present_toast")
+        : (isExcused ? villager + " → " + t("excused") : villager + " " + t("marked_absent_toast"));
+      toast(msg, status === "present" ? "success" : "warn");
       renderAll();
     }
     window.markAttendance = markAttendance;
 
+    // ---------- QR session ----------
+    function openQrSession() {
+      const sel = document.getElementById("actSelect");
+      const activityId = parseInt(sel.value);
+      if (!activityId) { toast(t("choose_activity"), "warn"); return; }
+      let session = getQrSession();
+      if (!session || session.activityId !== activityId) {
+        session = startQrSession(activityId);
+      }
+      const activity = getActivities().find(a => a.id === activityId);
+      const html = `
+        <button class="u-modal-close" onclick="closeModal()">&times;</button>
+        <h3><i class="bi bi-qr-code"></i> ${escapeHTML(t("qr_active"))}</h3>
+        <p class="u-text-muted"><strong>${escapeHTML(activity.title)}</strong> · ${activity.date}</p>
+        <div class="u-text-center" style="margin: 1rem 0;">
+          <div class="u-qr-box" id="qrDisplay"></div>
+          <div class="u-qr-code">${session.code}</div>
+        </div>
+        <p class="u-text-muted" style="font-size:0.85rem;">${escapeHTML(t("checkin_hint"))}</p>
+        <button class="btn btn-danger-outline btn-block" onclick="stopQrAndClose()">
+          <i class="bi bi-stop-circle"></i> ${escapeHTML(t("stop_qr"))}
+        </button>
+      `;
+      openModal(html);
+      setTimeout(() => {
+        const disp = document.getElementById("qrDisplay");
+        if (disp && typeof drawCodeArt === "function") drawCodeArt(disp, session.code, 180);
+      }, 50);
+      toast(t("qr_started"));
+    }
+    window.openQrSession = openQrSession;
+
+    function stopQrAndClose() {
+      endQrSession();
+      closeModal();
+      toast(t("qr_stopped"));
+    }
+    window.stopQrAndClose = stopQrAndClose;
+
+    // ---------- Payment confirmation ----------
+    function confirmPayment(paymentId) {
+      const payments = getPayments();
+      const idx = payments.findIndex(p => p.id === paymentId);
+      if (idx < 0) return;
+      payments[idx].status = "confirmed";
+      savePayments(payments);
+      // Also mark the underlying attendance as paid
+      const attendance = getAttendance();
+      const attIdx = attendance.findIndex(a => a.id === payments[idx].attendanceId);
+      if (attIdx >= 0) { attendance[attIdx].paid = true; attendance[attIdx].momoRef = payments[idx].momoRef; saveAttendance(attendance); }
+      toast(t("payment_confirmed"));
+      renderAll();
+    }
+    function rejectPayment(paymentId) {
+      const payments = getPayments();
+      const idx = payments.findIndex(p => p.id === paymentId);
+      if (idx < 0) return;
+      payments[idx].status = "rejected";
+      savePayments(payments);
+      toast(t("rejected"), "warn");
+      renderAll();
+    }
+    window.confirmPayment = confirmPayment;
+    window.rejectPayment = rejectPayment;
+
+    // ---------- Suggestions ----------
+    function markSuggestionReviewed(id) {
+      const s = getSuggestions();
+      const idx = s.findIndex(x => x.id === id);
+      if (idx >= 0) { s[idx].status = "reviewed"; saveSuggestions(s); renderAll(); }
+    }
+    window.markSuggestionReviewed = markSuggestionReviewed;
+
+    // ---------- Villager profile edit ----------
+    function editVillagerProfile(name) {
+      const v = getVillagerProfile(name);
+      const html = `
+        <button class="u-modal-close" onclick="closeModal()">&times;</button>
+        <h3>${escapeHTML(t("edit_profile"))} — ${escapeHTML(name)}</h3>
+        <div class="u-form-group">
+          <label class="u-form-label">${escapeHTML(t("phone"))}</label>
+          <input type="text" id="profPhone" class="u-input" value="${escapeHTML(v.phone || "")}" />
+        </div>
+        <div class="u-form-group">
+          <label class="u-form-label">${escapeHTML(t("address"))}</label>
+          <input type="text" id="profAddress" class="u-input" value="${escapeHTML(v.address || "")}" />
+        </div>
+        <div class="u-form-group">
+          <label class="u-file-btn">
+            <i class="bi bi-camera"></i> ${escapeHTML(t("upload_photo"))}
+            <input type="file" accept="image/*" id="profPhotoInput" />
+          </label>
+          <div id="profPhotoPreview" style="margin-top:0.5rem;">
+            ${v.photo ? `<img src="${v.photo}" style="width:80px; height:80px; border-radius:50%; object-fit:cover;">` : ""}
+          </div>
+        </div>
+        <button class="btn btn-primary btn-block" onclick="saveVillagerProfile('${name.replace(/'/g,"\\'")}')">
+          <i class="bi bi-check-circle"></i> ${escapeHTML(t("save"))}
+        </button>
+      `;
+      openModal(html);
+      // Preview photo on select
+      setTimeout(() => {
+        const inp = document.getElementById("profPhotoInput");
+        if (inp) {
+          inp.addEventListener("change", (e) => {
+            const f = e.target.files[0];
+            if (!f) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+              document.getElementById("profPhotoPreview").innerHTML =
+                `<img src="${reader.result}" style="width:80px; height:80px; border-radius:50%; object-fit:cover;">`;
+              document.getElementById("profPhotoPreview").dataset.data = reader.result;
+            };
+            reader.readAsDataURL(f);
+          });
+        }
+      }, 100);
+    }
+    window.editVillagerProfile = editVillagerProfile;
+
+    function saveVillagerProfile(name) {
+      const villagers = getVillagers();
+      const idx = villagers.findIndex(v => v.name === name);
+      const phone = document.getElementById("profPhone").value.trim();
+      const address = document.getElementById("profAddress").value.trim();
+      const preview = document.getElementById("profPhotoPreview");
+      const photo = preview.dataset.data || (villagers[idx]?.photo || null);
+      if (idx >= 0) {
+        villagers[idx] = { ...villagers[idx], phone, address, photo };
+      } else {
+        villagers.push({ name, phone, address, photo });
+      }
+      saveVillagers(villagers);
+      closeModal();
+      toast(t("profile_updated"));
+      renderAll();
+    }
+    window.saveVillagerProfile = saveVillagerProfile;
+
+    // ---------- Photo upload ----------
+    function handlePhotoUpload(e) {
+      const activityId = parseInt(document.getElementById("photoActivity").value);
+      if (!activityId) { toast(t("select_activity"), "warn"); return; }
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const activities = getActivities();
+        const idx = activities.findIndex(a => a.id === activityId);
+        if (idx < 0) return;
+        if (!activities[idx].photos) activities[idx].photos = [];
+        activities[idx].photos.push({
+          id: Date.now(),
+          data: reader.result,
+          date: new Date().toISOString().slice(0,10)
+        });
+        saveActivities(activities);
+        toast(t("upload") + " ✓");
+        renderAll();
+      };
+      reader.readAsDataURL(file);
+      e.target.value = "";
+    }
+    window.handlePhotoUpload = handlePhotoUpload;
+
+    function renderPhotoGrid() {
+      const activityId = parseInt(document.getElementById("photoActivity").value);
+      const grid = document.getElementById("photoGrid");
+      if (!activityId) { grid.innerHTML = ""; return; }
+      const activity = getActivities().find(a => a.id === activityId);
+      const photos = activity?.photos || [];
+      grid.innerHTML = photos.length
+        ? photos.map(p => `
+          <div class="u-photo"><img src="${p.data}" alt="Umuganda photo" /></div>
+        `).join("")
+        : `<div class="u-empty"><span class="u-empty-icon">📷</span>${t("no_photos")}</div>`;
+    }
+    document.getElementById("photoActivity").addEventListener("change", renderPhotoGrid);
+
+    // ---------- Attendance table ----------
     function renderAttendanceTable() {
       const sel = document.getElementById("actSelect");
       const area = document.getElementById("attendanceArea");
+      const actionsBar = document.getElementById("activityActions");
       const activityId = parseInt(sel.value);
-      if (!activityId) { area.innerHTML = ""; return; }
+      if (!activityId) { area.innerHTML = ""; actionsBar.style.display = "none"; return; }
+      actionsBar.style.display = "flex";
 
       const activity = getActivities().find(a => a.id === activityId);
       const rsvps    = getRsvps().filter(r => r.activityId === activityId);
@@ -180,42 +473,50 @@
       const presentCount = att.filter(a => a.status === "present").length;
       const absentCount  = att.filter(a => a.status === "absent").length;
 
-      const rows = DEMO_VILLAGERS.map(v => {
+      const villagers = DEMO_VILLAGERS;
+      const rows = villagers.map(v => {
         const rsvp = rsvps.find(r => r.villager === v);
         const a    = att.find(x => x.villager === v);
+        const profile = getVillagerProfile(v);
 
-        let rsvpHtml = `<span class="u-pill muted">No response</span>`;
+        let rsvpHtml = `<span class="u-pill muted">${t("no_response")}</span>`;
         if (rsvp && rsvp.response === "available") {
-          rsvpHtml = `<span class="u-pill present">Will attend</span>`;
+          rsvpHtml = `<span class="u-pill present">${t("will_attend")}</span>`;
         } else if (rsvp && rsvp.response === "unavailable") {
-          rsvpHtml = `<span class="u-pill absent">Cannot attend</span>
+          const badge = rsvp.approvalStatus === "approved" ? `<span class="u-pill excused" style="margin-left:4px;">${t("excused")}</span>` :
+                        rsvp.approvalStatus === "rejected" ? `<span class="u-pill rejected" style="margin-left:4px;">${t("rejected")}</span>` : "";
+          rsvpHtml = `<span class="u-pill absent">${t("cannot_attend")}</span>${badge}
                       <div class="u-text-muted" style="font-size:0.78rem;font-style:italic;margin-top:0.3rem;">${escapeHTML(rsvp.reason)}</div>`;
         }
 
         let confirmedHtml = a
-          ? `<span class="u-pill ${a.status}">${a.status}${a.charge ? ` · ${formatRWF(a.charge)}` : ""}</span>`
-          : `<span class="u-pill muted">Not confirmed</span>`;
+          ? `<span class="u-pill ${a.status}">${t(a.status)}${a.charge ? ` · ${formatRWF(a.charge)}` : ""}${a.method === "qr" ? ` · QR` : a.method === "gps" ? ` · GPS` : ""}</span>`
+          : `<span class="u-pill muted">${t("not_confirmed")}</span>`;
 
         let flag = "";
         if (rsvp && a) {
           if (rsvp.response === "available" && a.status === "absent") {
-            flag = `<span class="u-flag warn"><i class="bi bi-exclamation-triangle-fill"></i> Said attending but absent</span>`;
+            flag = `<span class="u-flag warn"><i class="bi bi-exclamation-triangle-fill"></i> ${t("said_yes_but_absent")}</span>`;
           } else if (rsvp.response === "unavailable" && a.status === "present") {
-            flag = `<span class="u-flag good"><i class="bi bi-info-circle-fill"></i> Came despite saying no</span>`;
+            flag = `<span class="u-flag good"><i class="bi bi-info-circle-fill"></i> ${t("came_despite_no")}</span>`;
           }
         }
 
+        const avatar = profile.photo
+          ? `<img src="${profile.photo}" style="width:32px; height:32px; border-radius:50%; object-fit:cover; vertical-align:middle; margin-right:0.5rem;">`
+          : `<span class="u-avatar" style="display:inline-grid; margin-right:0.5rem; vertical-align:middle;">${getInitials(v)}</span>`;
+
         return `
           <tr>
-            <td data-label="Villager"><strong>${escapeHTML(v)}</strong></td>
-            <td data-label="Confirmation">${rsvpHtml}</td>
-            <td data-label="Final">${confirmedHtml}${flag}</td>
-            <td data-label="Action" class="actions">
+            <td data-label="${t('villager_col')}">${avatar}<strong>${escapeHTML(v)}</strong></td>
+            <td data-label="${t('confirmation')}">${rsvpHtml}</td>
+            <td data-label="${t('final')}">${confirmedHtml}${flag}</td>
+            <td data-label="${t('action')}" class="actions">
               <button class="btn btn-primary btn-sm" onclick="markAttendance(${activityId}, '${v.replace(/'/g, "\\'")}', 'present')">
-                <i class="bi bi-check-lg"></i> Present
+                <i class="bi bi-check-lg"></i> ${t("present")}
               </button>
               <button class="btn btn-danger btn-sm" onclick="markAttendance(${activityId}, '${v.replace(/'/g, "\\'")}', 'absent')">
-                <i class="bi bi-x-lg"></i> Absent
+                <i class="bi bi-x-lg"></i> ${t("absent")}
               </button>
             </td>
           </tr>
@@ -227,15 +528,20 @@
           <strong>${escapeHTML(activity.title)}</strong>
           <span class="u-text-muted"> — ${activity.date} · ${escapeHTML(activity.location)}</span>
           <div class="stats">
-            <span><i class="bi bi-check-circle-fill" style="color:var(--u-green-700);"></i> ${presentCount} present</span>
-            <span><i class="bi bi-x-circle-fill" style="color:var(--u-red);"></i> ${absentCount} absent</span>
-            <span><i class="bi bi-cash-coin" style="color:var(--u-gold-dark);"></i> ${formatRWF(totalCharge)} charges</span>
+            <span><i class="bi bi-check-circle-fill" style="color:var(--u-green-700);"></i> ${presentCount} ${t("present").toLowerCase()}</span>
+            <span><i class="bi bi-x-circle-fill" style="color:var(--u-red);"></i> ${absentCount} ${t("absent").toLowerCase()}</span>
+            <span><i class="bi bi-cash-coin" style="color:var(--u-gold-dark);"></i> ${formatRWF(totalCharge)}</span>
           </div>
         </div>
         <div class="u-table-wrap">
           <table class="u-table">
             <thead>
-              <tr><th>Villager</th><th>Confirmation</th><th>Final</th><th>Action</th></tr>
+              <tr>
+                <th>${t("villager_col")}</th>
+                <th>${t("confirmation")}</th>
+                <th>${t("final")}</th>
+                <th>${t("action")}</th>
+              </tr>
             </thead>
             <tbody>${rows}</tbody>
           </table>
@@ -244,10 +550,13 @@
     }
     window.renderAttendanceTable = renderAttendanceTable;
 
+    // ---------- Master render ----------
     function renderAll() {
       const activities = getActivities();
       const rsvps      = getRsvps();
       const attendance = getAttendance();
+      const payments   = getPayments();
+      const suggestions = getSuggestions();
 
       document.getElementById("statActivities").textContent = activities.length;
       document.getElementById("statUpcoming")  .textContent = activities.filter(a => a.status === "scheduled").length;
@@ -255,41 +564,144 @@
       const totalCharges = attendance.reduce((s, a) => s + (a.charge || 0), 0);
       document.getElementById("statCharges")   .textContent = totalCharges ? formatRWF(totalCharges) : "0";
 
+      // Absence requests
+      const pendingRsvps = rsvps.filter(r => r.response === "unavailable" && r.approvalStatus === "pending");
+      const absBox = document.getElementById("absenceRequestsList");
+      absBox.innerHTML = pendingRsvps.length
+        ? pendingRsvps.map(r => {
+            const act = activities.find(a => a.id === r.activityId);
+            return `
+              <div class="u-suggestion">
+                <div class="msg">
+                  <strong>${escapeHTML(r.villager)}</strong> — ${act ? escapeHTML(act.title) : "—"} (${act ? act.date : ""})
+                  <div class="u-text-muted" style="font-style:italic; margin-top:0.3rem;">"${escapeHTML(r.reason)}"</div>
+                </div>
+                <div class="u-action-row">
+                  <button class="btn btn-primary btn-sm" onclick="approveAbsence(${r.id})">
+                    <i class="bi bi-check-circle"></i> ${t("approve_absence")}
+                  </button>
+                  <button class="btn btn-danger-outline btn-sm" onclick="rejectAbsence(${r.id})">
+                    <i class="bi bi-x-circle"></i> ${t("reject_absence")}
+                  </button>
+                </div>
+              </div>
+            `;
+          }).join("")
+        : `<div class="u-empty"><span class="u-empty-icon">✅</span>${t("no_pending_requests")}</div>`;
+
+      // Activity dropdown for cross-check & photo panel
       const sel = document.getElementById("actSelect");
       const currentVal = sel.value;
-      sel.innerHTML = '<option value="">— Choose an activity —</option>' +
+      sel.innerHTML = `<option value="">${t("choose_activity")}</option>` +
         activities.map(a => `<option value="${a.id}">${escapeHTML(a.title)} (${a.date})</option>`).join("");
       if (currentVal) sel.value = currentVal;
 
+      const photoSel = document.getElementById("photoActivity");
+      const photoVal = photoSel.value;
+      photoSel.innerHTML = `<option value="">${t("choose_activity")}</option>` +
+        activities.map(a => `<option value="${a.id}">${escapeHTML(a.title)} (${a.date})</option>`).join("");
+      if (photoVal) photoSel.value = photoVal;
+
+      // Pending payments
+      const pendingPays = payments.filter(p => p.status === "pending");
+      const payBox = document.getElementById("pendingPaymentsList");
+      payBox.innerHTML = pendingPays.length
+        ? pendingPays.map(p => `
+            <div class="u-suggestion">
+              <div class="msg">
+                <strong>${escapeHTML(p.villager)}</strong> — ${formatRWF(p.amount)}
+                <div class="u-text-muted" style="font-size:0.85rem; margin-top:0.2rem;">
+                  MoMo ref: <code>${escapeHTML(p.momoRef)}</code> · ${p.date}
+                </div>
+              </div>
+              <div class="u-action-row">
+                <button class="btn btn-primary btn-sm" onclick="confirmPayment(${p.id})">
+                  <i class="bi bi-check-circle"></i> ${t("confirm_payment")}
+                </button>
+                <button class="btn btn-danger-outline btn-sm" onclick="rejectPayment(${p.id})">
+                  <i class="bi bi-x-circle"></i> ${t("reject_payment")}
+                </button>
+              </div>
+            </div>
+          `).join("")
+        : `<div class="u-empty"><span class="u-empty-icon">💳</span>${t("no_charges")}</div>`;
+
+      // Suggestions
+      const newSug = suggestions.filter(s => s.status === "new");
+      const sugBox = document.getElementById("suggestionsList");
+      sugBox.innerHTML = suggestions.length
+        ? suggestions.map(s => `
+            <div class="u-suggestion">
+              <div class="msg">"${escapeHTML(s.message)}"</div>
+              <div class="meta">
+                <span><i class="bi bi-calendar3"></i> ${s.date}</span>
+                ${s.status === "new"
+                  ? `<span class="u-pill gold">${t("new_tag")}</span>
+                     <button class="btn btn-ghost btn-sm" onclick="markSuggestionReviewed(${s.id})">
+                       <i class="bi bi-check"></i> ${t("mark_reviewed")}
+                     </button>`
+                  : `<span class="u-pill muted">${t("reviewed")}</span>`}
+              </div>
+            </div>
+          `).join("")
+        : `<div class="u-empty"><span class="u-empty-icon">💡</span>${t("no_suggestions")}</div>`;
+
+      // Villager profiles
+      const profBox = document.getElementById("villagerProfilesList");
+      profBox.innerHTML = DEMO_VILLAGERS.map(v => {
+        const p = getVillagerProfile(v);
+        return `
+          <div class="u-profile-card">
+            <div class="u-profile-photo">
+              ${p.photo ? `<img src="${p.photo}" alt="${escapeHTML(v)}">` : escapeHTML(getInitials(v))}
+            </div>
+            <div class="u-profile-info">
+              <div class="name">${escapeHTML(v)}</div>
+              <div class="meta"><i class="bi bi-telephone"></i> ${escapeHTML(p.phone || "—")} · <i class="bi bi-house"></i> ${escapeHTML(p.address || "—")}</div>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="editVillagerProfile('${v.replace(/'/g,"\\'")}')">
+              <i class="bi bi-pencil"></i> ${t("edit_profile")}
+            </button>
+          </div>
+        `;
+      }).join("");
+
+      // Activities table
       const tbody = document.querySelector("#activitiesTable tbody");
       tbody.innerHTML = activities.length
         ? activities.map(a => `
             <tr>
-              <td data-label="Activity"><strong>${escapeHTML(a.title)}</strong></td>
-              <td data-label="Date">${a.date}</td>
-              <td data-label="Location">${escapeHTML(a.location)}</td>
-              <td data-label="Status"><span class="u-pill ${a.status}">${a.status}</span></td>
+              <td data-label="${t('activity')}"><strong>${escapeHTML(a.title)}</strong></td>
+              <td data-label="${t('date')}">${a.date}</td>
+              <td data-label="${t('location')}">${escapeHTML(a.location)}</td>
+              <td data-label="${t('status')}"><span class="u-pill ${a.status}">${t(a.status) || a.status}</span></td>
             </tr>
           `).join("")
-        : `<tr><td colspan="4"><div class="u-empty">No activities yet.</div></td></tr>`;
+        : `<tr><td colspan="4"><div class="u-empty">${t("no_activities")}</div></td></tr>`;
 
       if (sel.value) renderAttendanceTable();
+      if (photoSel.value) renderPhotoGrid();
     }
 
     document.getElementById("activityForm").addEventListener("submit", e => {
       e.preventDefault();
       const activities = getActivities();
+      const lat = parseFloat(document.getElementById("actLat").value);
+      const lng = parseFloat(document.getElementById("actLng").value);
       activities.unshift({
         id: Date.now(),
         title:    document.getElementById("actTitle").value.trim(),
         date:     document.getElementById("actDate").value,
         location: document.getElementById("actLocation").value.trim(),
-        status: "scheduled"
+        lat: isNaN(lat) ? null : lat,
+        lng: isNaN(lng) ? null : lng,
+        status: "scheduled",
+        photos: []
       });
       saveActivities(activities);
       e.target.reset();
       renderAll();
-      toast("Activity scheduled successfully!");
+      toast(t("activity_scheduled"));
     });
 
     document.getElementById("announceForm").addEventListener("submit", e => {
@@ -300,14 +712,15 @@
         title:   document.getElementById("annTitle").value.trim(),
         message: document.getElementById("annMessage").value.trim(),
         date:    new Date().toISOString().slice(0,10),
-        author:  "Leader " + user.name
+        author:  "Leader " + currentUser.name
       });
       saveAnnouncements(announcements);
       e.target.reset();
-      toast("Announcement published!");
+      toast(t("announcement_published"));
     });
 
     renderAll();
+    document.addEventListener("langchange", renderAll);
   </script>
 </body>
 </html>
